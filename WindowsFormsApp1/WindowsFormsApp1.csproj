@@ -4,15 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{CB493050-4683-4635-BF1E-EA6178804B79}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>testPersoScript</RootNamespace>
-    <AssemblyName>testPersoScript</AssemblyName>
+    <ProjectGuid>{C195DA1F-CB17-439C-BF33-C3EADC471A11}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>WindowsFormsApp1</RootNamespace>
+    <AssemblyName>WindowsFormsApp1</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,6 +23,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -30,42 +32,19 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AtlanticZeiser.CpiPc.Reader.Smartware">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Reader.Smartware.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Compiler">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Compiler.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Converter">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Converter.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Scripting.CSharp">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Xml.Common">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Xml.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Xml.Iso7816">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Xml.Iso7816.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Xml.Mifare">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Xml.Mifare.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Tools">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Tools.dll</HintPath>
-    </Reference>
     <Reference Include="pcsc-sharp, Version=3.8.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\PCSC.3.8.0\lib\net40\pcsc-sharp.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
@@ -75,15 +54,33 @@
     <Compile Include="Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <None Include="packages.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
+    <None Include="App.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
