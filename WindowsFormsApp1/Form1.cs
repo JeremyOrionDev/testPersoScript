@@ -8,30 +8,52 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using PCSC;
+using AtlanticZeiser.CpiPc.Scripting.CSharp;
+using AtlanticZeiser.CpiPc.Reader.Smartware;
+using AtlanticZeiser.CpiPc.Reader.Smartware.Cards;
+using AtlanticZeiser.CpiPc.Scripting.Compiler;
+using AtlanticZeiser.CpiPc.Tools.Misc;
+using AtlanticZeiser.CpiPc.Scripting.Converter;
+using AtlanticZeiser.CpiPc.Scripting.Xml.Mifare;
+using System.Security.Cryptography;
+using AtlanticZeiser.CpiPc.Scripting.Xml.Iso7816;
 using System.Runtime.InteropServices;
+
+
 
 namespace WindowsFormsApp1
 {
     public partial class Form1 : Form
     {
-
-        [DllImport("ctacs.dll")]
-        static extern int ACSdll();
+        
+        SCardShareMode cardShareMode = new SCardShareMode();
+        SCardProtocol cardProtocol = new SCardProtocol();
+        [DllImport("winscard.dll")]
+        static extern int SCardEstablishContext(uint dwScope, IntPtr pvReserved1, IntPtr pvReserved2, out IntPtr phContext);
         byte[] pbRecvBuffer = new byte[256];
         SCardError err;
         SCardReader theReader = null;
-        public SCardShareMode selShareMode;
-        private SCardProtocol selProtocol;
+        SCardReader SAM = null;
+        CSharpScriptProvider provider;
+        CardData card;
         SCardContext hContext = new SCardContext();
+        int CardID;
+
         public Form1()
         {
-            
             InitializeComponent();
+            rondVert.ImageLocation = @"C:\Users\jeremy\Downloads\button-green.png";
+            panelConnexion.Visible = false;
+            rond_rouge.ImageLocation = @"C:\Users\jeremy\Downloads\circle-red.png";
             hContext.Establish(SCardScope.System);
             readerList();
         }
+
         void readerList()
         {
+            
+            cBxProtocol.Items.AddRange(new string[] { "T0", "Any", "T1", "T15", "Unset", "Raw" });
+            cBxShareMode.Items.AddRange(new string[] { "Direct", "Exclusive", "Shared" });
             if (cbReaders.SelectedIndex == -1)
             {
                 lblSelectReader.Visible = true;
@@ -48,35 +70,128 @@ namespace WindowsFormsApp1
             }
 
         }
+        ErrorProvider err2=new ErrorProvider();
         public void readerConnect()
         {
+            byte[] getATR = new byte[] { };
+            string value = cbReaders.SelectedItem.ToString();
+            switch (value)
+            {
+                case "ACS CCID USB Reader 0":
+                    getATR = new byte[] { 0x94, 0x84, 0x00, 0x00, 0x08 };
+                    break;
+                case "Duali DE-620 Contact Reader 0":
+                    getATR = new byte[] { 0x94, 0xBE, 0x00, 0x00, 0x13 };
+                    break;
+            }
+            
+            switch (cBxProtocol.SelectedIndex)
+            {
+                case 0:
+                    cardProtocol = SCardProtocol.T0;
+                    break;
+                case 1:
+                    cardProtocol = SCardProtocol.Any;
+                    break;
+                case 2:
+                    cardProtocol = SCardProtocol.T1;
+                    break;
+                case 3:
+                    cardProtocol = SCardProtocol.T15;
+                    break;
+                case 4:
+                    cardProtocol = SCardProtocol.Unset;
+                    break;
+                case 5:
+                    cardProtocol = SCardProtocol.Raw;
+                    break;          
+            }
+            switch (cBxShareMode.SelectedIndex)
+            {
+                case 0:
+                    //MessageBox.Show("ShareMode Direct");
+                    cardShareMode = SCardShareMode.Direct;
+                    break;
+                case 1:
+                    //MessageBox.Show("ShareMode Exclusive");
+                    cardShareMode = SCardShareMode.Exclusive;
+                    break;
+                case 2:
+                    //MessageBox.Show("ShareMode Shared");
+                    cardShareMode = SCardShareMode.Shared;
+                    break;
+            }
+            panelConnexion.Visible = true;
             theReader = new SCardReader(hContext);
+            SAM = new SCardReader(hContext);
+            err= theReader.Connect(cbReaders.SelectedItem.ToString(), cardShareMode, cardProtocol);
+            if (err == SCardError.Success)
+            {
+                rondVert.Visible = true;
+                rond_rouge.Visible = false;
+                ATR(getATR);
+            }
+            else
+            {
+                rond_rouge.Visible = true;
+                rondVert.Visible = false;
+            }
+        }
 
-             err= theReader.Connect(cbReaders.SelectedItem.ToString(), SCardShareMode.Exclusive, SCardProtocol.T0);
+        
+        public void ATR(byte[] atrByte)
+        {
+
+
+            err = theReader.Transmit(SCardPCI.T0, atrByte, ref pbRecvBuffer);
             CheckError(err);
             if (err==SCardError.Success)
             {
-                ATR();
-            }
-        }
-        public void ATR()
-        {
-
-            //Get ATR command
-            byte[] cmd1 = new byte[] { 0x00, 0xBE, 0x00, 0x00, 0x13 };
-
-            err = theReader.Transmit(SCardPCI.T0, cmd1, ref pbRecvBuffer);
-            if (err==SCardError.Success)
-            {
+                
                 string X = "";
                 for (int i = 0; i < pbRecvBuffer.Length; i++)
                 {
-                    X += pbRecvBuffer[i].ToString("X2") + "-";
+                    X += pbRecvBuffer[i].ToString("X2") ;
                 }
-                txBxATR.Text = X;
+                if (X.Length>10)
+                {
+                    X = X.Substring(0, X.Length - 4);
+                }
+                string atrAffich = "";
+                for (int i = 0; i < X.Length; i=i+2)
+                {
+                    atrAffich +=  X.Substring(i, 2);
+                }
+                CardID = Convert.ToInt32(X.Substring(24, 8));
+       
+                txBxATR.Text = atrAffich;
                 Font F = DefaultFont;
-                txBxATR.Width = X.Length*6;
+                txBxATR.Width = atrAffich.Length * 6;
+                txBxCardID.Text = CardID.ToString("D8");
+
+                getApp();
             }
+        }
+        public void getApp()
+        {
+            // AID 33 4D 54 52 2E 49 43 41 00 00 00 00 00 00 00 00h
+            err = theReader.Transmit(SCardPCI.T0, new byte[] { 0x94, 0xA4, 0x04, 0x00, 0x08, 0x33,0x4D,0x54,0x52,0x2E,0x49, 0x43, 0x41, 0x00}, ref pbRecvBuffer);
+            if (err==SCardError.Success)
+            {
+                string app = "";
+                for (int i = 0; i < pbRecvBuffer.Length; i++)
+                {
+                    app += pbRecvBuffer[i].ToString("X2");
+                }
+                MessageBox.Show("resultat app"+"\n"+app);
+            }
+        }
+        public void getChallenge(int serial)
+        {
+            err=SAM.Connect("ACS CCID USB Reader 0", SCardShareMode.Exclusive, SCardProtocol.T0);
+            CheckError(err);
+            //byte[] cmd=new byte[] {}
+            //err=SAM.Transmit()
         }
         void CheckError(SCardError Error)
         {
@@ -90,12 +205,7 @@ namespace WindowsFormsApp1
 
             try
             {
-                
-
-               
                 IntPtr pioSendPci;
-                
-
 
                 //Send select command
                 #region groupe1
@@ -122,32 +232,7 @@ namespace WindowsFormsApp1
                     X += pbRecvBuffer[i].ToString("X2") + "-";
                 }
                 MessageBox.Show("pbRecvBuffer = " + X);
-                //if (err==SCardError.Success)
-                //{
-                //    err = reader.Transmit(SCardPCI.T0, cmd2, ref pbRecvBuffer);
-                //    string Y = "";
-                //    for (int i = 0; i < pbRecvBuffer.Length; i++)
-                //    {
-                //        Y += pbRecvBuffer[i].ToString("X2") + "-";
-                //    }
-                //    MessageBox.Show("pbRecvBuffer = " + Y);
-                //    if (err==SCardError.Success)
-                //    {
-                //        err = reader.Transmit(SCardPCI.T0, cmd3, ref pbRecvBuffer);
-                //        CheckError(err);
-                //        string Z = "";
-                //        for (int i = 0; i < pbRecvBuffer.Length; i++)
-                //        {
-                //            Z += pbRecvBuffer[i].ToString("X2") + "-";
-                //        }
-                //        MessageBox.Show("pbRecvBuffer = " + Z);
-                //    }
-                //    else MessageBox.Show("erreur : "+err.ToString());
-                //}
-                //else
-                //{
-                //    MessageBox.Show("erreur:"+err.ToString());
-                //}
+                
                 
             }
             catch (PCSCException ex)
@@ -166,6 +251,8 @@ namespace WindowsFormsApp1
 
         private void button1_Click(object sender, EventArgs e)
         {
+            SCardProtocol SP = new SCardProtocol();
+
             readerConnect();
         }
 
@@ -197,8 +284,11 @@ namespace WindowsFormsApp1
             for (int i = 0; i < pbRecvBuffer.Length; i++)
             {
                 X += pbRecvBuffer[i].ToString("X2") + "-";
-            }
-            MessageBox.Show("result: " + "\n" + X);
+                
+
+    }
+
+    MessageBox.Show("result: " + "\n" + X);
             if (err==SCardError.Success)
             {
                 err = theReader.Transmit(SCardPCI.T0, cmd2, ref pbRecvBuffer);
@@ -223,13 +313,13 @@ namespace WindowsFormsApp1
         private void button2_Click(object sender, EventArgs e)
         {
             byte[] cmd = new byte[] { 0x94, 0xA4, 0x04, 0x00, 0x0B, 0xA0, 0x00, 0x00, 0x02, 0x91, 0xD0, 0x12, 0x00, 0x08, 0x90, 0x01 };
-            byte[] cmd2 = new byte[] { 0x6F, 0x25, 0x84, 0x0B, 0xA0, 0x00, 0x00, 0x02, 0x91, 0xD0, 0x12, 0x00, 0x08, 0x90, 0x01, 0xA5, 0x16, 0xBF, 0x0C, 0x13, 0xC7, 0x08, 0x00, 0x00, 0x00, 0x00, 0x55, 0x66, 0x77, 0x88, 0x53, 0x07, 0x06, 0x0A, 0x01, 0x02, 0x20, 0x03, 0x11, 0x90, 0x00};
+    
             err = theReader.Transmit(SCardPCI.T0, cmd, ref pbRecvBuffer);
 
             CheckError(err);
             if (err==SCardError.Success)
             {
-                err = theReader.Transmit(SCardPCI.T0, cmd2, ref pbRecvBuffer);
+                err = theReader.Transmit(SCardPCI.T0, cmd, ref pbRecvBuffer);
                 string X = "";
                 for (int i = 0; i < pbRecvBuffer.Length; i++)
                 {
@@ -242,8 +332,8 @@ namespace WindowsFormsApp1
 
         private void btn_Get_Memory_Click(object sender, EventArgs e)
         {
-            byte[] cmd = new byte[] { 0x94, 0xD2, 0x01, 0x14, 0x16, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0xFA};
-            pbRecvBuffer = new byte[02];
+            byte[] cmd = new byte[] { 0x94, 0xE1,0x00,0x02,0x02};
+            pbRecvBuffer = new byte[256];
             err = theReader.Transmit(SCardPCI.T0, cmd, ref pbRecvBuffer);
             CheckError(err);
             string Y = "";
@@ -254,9 +344,30 @@ namespace WindowsFormsApp1
             MessageBox.Show("résultat de la lecture EEPROM: "+"\n"+Y);
         }
 
-        private void button3_Click(object sender, EventArgs e)
+        private void btnCreationStructure2_Click(object sender, EventArgs e)
         {
             structure2();
+        }
+
+        private void cBxProtocol_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            //MessageBox.Show("protocole selected index:"+cBxProtocol.SelectedIndex);
+        }
+
+        private void cBxShareMode_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            //MessageBox.Show("Share Mode:"+cBxShareMode.SelectedIndex);
+        }
+
+        private void btnCopy_Click(object sender, EventArgs e)
+        {
+            Clipboard.SetText(cbReaders.SelectedItem.ToString());
+        }
+
+        private void btnDeconnecte_Click(object sender, EventArgs e)
+        {
+            err=theReader.Disconnect(SCardReaderDisposition.Eject);
+            txBxATR.Clear();
         }
     }
 }

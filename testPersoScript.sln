@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "testPersoScript", "testPers
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsFormsApp1", "WindowsFormsApp1\WindowsFormsApp1.csproj", "{C195DA1F-CB17-439C-BF33-C3EADC471A11}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pcsc-sharp", "..\..\..\Downloads\pcsc-sharp-master\pcsc-sharp-master\pcsc-sharp\pcsc-sharp.csproj", "{459E0FB4-AF42-4123-9923-7EA68CA01B09}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{C195DA1F-CB17-439C-BF33-C3EADC471A11}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C195DA1F-CB17-439C-BF33-C3EADC471A11}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C195DA1F-CB17-439C-BF33-C3EADC471A11}.Release|Any CPU.Build.0 = Release|Any CPU
+		{459E0FB4-AF42-4123-9923-7EA68CA01B09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{459E0FB4-AF42-4123-9923-7EA68CA01B09}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{459E0FB4-AF42-4123-9923-7EA68CA01B09}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{459E0FB4-AF42-4123-9923-7EA68CA01B09}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -32,8 +32,29 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="pcsc-sharp, Version=3.8.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\PCSC.3.8.0\lib\net40\pcsc-sharp.dll</HintPath>
+    <Reference Include="AtlanticZeiser.CpiPc.Reader.Smartware">
+      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Reader.Smartware.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Compiler">
+      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Compiler.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Converter">
+      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Converter.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Scripting.CSharp">
+      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Xml.Common">
+      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Xml.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Xml.Iso7816">
+      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Xml.Iso7816.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Xml.Mifare">
+      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Xml.Mifare.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Tools">
+      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Tools.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -56,6 +77,7 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="smartCard.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
@@ -81,6 +103,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Downloads\pcsc-sharp-master\pcsc-sharp-master\pcsc-sharp\pcsc-sharp.csproj">
+      <Project>{459e0fb4-af42-4123-9923-7ea68ca01b09}</Project>
+      <Name>pcsc-sharp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
