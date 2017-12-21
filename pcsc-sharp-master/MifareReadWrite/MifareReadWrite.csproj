@@ -1,0 +1,152 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{8EC1245F-841E-42CF-A180-DDA7384829C6}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>MifareReadWrite</RootNamespace>
+    <AssemblyName>MifareReadWrite</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Form1.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form1.Designer.cs">
+      <DependentUpon>Form1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Form1.resx">
+      <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Examples\CardStatus\CardStatus.csproj">
+      <Project>{62dd4f80-260d-40c6-abf1-749fb8f5b794}</Project>
+      <Name>CardStatus</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Examples\GetReaderAttrib\GetReaderAttrib.csproj">
+      <Project>{d2a40f06-6711-4a9a-b123-5c4aff19dfb4}</Project>
+      <Name>GetReaderAttrib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Examples\ISO7816-4\ApduTest.GET_CHALLENGE\ApduTest.GET_CHALLENGE.csproj">
+      <Project>{656702e2-3621-428b-ae93-6cc508e5e701}</Project>
+      <Name>ApduTest.GET_CHALLENGE</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Examples\ListReaderEventsNative\ListReaderEventsNative.csproj">
+      <Project>{91f9c99e-cb50-4128-acef-b22b743babba}</Project>
+      <Name>ListReaderEventsNative</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Examples\ListReaderEvents\ListReaderEvents.csproj">
+      <Project>{7ddf4224-5212-45c4-a04e-2e4568a241dc}</Project>
+      <Name>ListReaderEvents</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Examples\ListReaders\ListReaders.csproj">
+      <Project>{5c176a2a-4eb5-48d3-b4fd-197a2bd10be6}</Project>
+      <Name>ListReaders</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Examples\Mifare1kTest\Mifare1kTest.csproj">
+      <Project>{18fcf9ad-3ac3-4bca-879f-183b94d56170}</Project>
+      <Name>Mifare1kTest</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Examples\MonitorReaderEvents\MonitorReaderEvents.csproj">
+      <Project>{3a1b423d-0e68-4c15-83aa-d66ae0b1e33f}</Project>
+      <Name>MonitorReaderEvents</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Examples\Reactive\RxDeviceEventsTests\RxDeviceEventsTests.csproj">
+      <Project>{d611b7ba-35a2-4b06-aa77-25762b1dbaff}</Project>
+      <Name>RxDeviceEventsTests</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Examples\Reactive\RxEventsTestWpf\RxEventsTestWpf.csproj">
+      <Project>{ca1903c2-a86a-4181-a900-d9b8aa733353}</Project>
+      <Name>RxEventsTestWpf</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Examples\Reactive\RxEventsTest\RxEventsTest.csproj">
+      <Project>{8209edfd-fa5f-4016-861e-35e3f4928ddf}</Project>
+      <Name>RxEventsTest</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Examples\ReaderStatus\ReaderStatus.csproj">
+      <Project>{1d4a94a9-7bbe-43dc-90ec-db4ece12ab3f}</Project>
+      <Name>ReaderStatus</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Examples\Transmit\Transmit.csproj">
+      <Project>{dc41aefb-b51b-4939-96d7-244f751bb937}</Project>
+      <Name>Transmit</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\pcsc-sharp-rx\pcsc-sharp-rx.csproj">
+      <Project>{9a5b987d-db36-4f8a-a62e-642deef51f7d}</Project>
+      <Name>pcsc-sharp-rx</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\pcsc-sharp\pcsc-sharp.csproj">
+      <Project>{459e0fb4-af42-4123-9923-7ea68ca01b09}</Project>
+      <Name>pcsc-sharp</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tests\pcsc-sharp-rx.Tests\pcsc-sharp-rx.Tests.csproj">
+      <Project>{cbcfd4a6-694b-4089-8b0f-2c158214be02}</Project>
+      <Name>pcsc-sharp-rx.Tests</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Tests\pcsc-sharp.Tests\pcsc-sharp.Tests.csproj">
+      <Project>{f39fc685-9fb2-490d-9ddd-ae64379d7545}</Project>
+      <Name>pcsc-sharp.Tests</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

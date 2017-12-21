@@ -11,6 +11,21 @@
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -31,31 +46,10 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Icons8-Ios7-Finance-Card-In-Use.ico</ApplicationIcon>
+  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AtlanticZeiser.CpiPc.Reader.Smartware">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Reader.Smartware.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Compiler">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Compiler.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Converter">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Converter.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Scripting.CSharp">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.CSharp.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Xml.Common">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Xml.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Xml.Iso7816">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Xml.Iso7816.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Xml.Mifare">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Xml.Mifare.dll</HintPath>
-    </Reference>
-    <Reference Include="AtlanticZeiser.CpiPc.Tools">
-      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Tools.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -77,7 +71,6 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="smartCard.cs" />
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
@@ -105,10 +98,25 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Downloads\pcsc-sharp-master\pcsc-sharp-master\pcsc-sharp\pcsc-sharp.csproj">
+    <ProjectReference Include="..\pcsc-sharp-master\pcsc-sharp\pcsc-sharp.csproj">
       <Project>{459e0fb4-af42-4123-9923-7ea68ca01b09}</Project>
       <Name>pcsc-sharp</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Icons8-Ios7-Finance-Card-In-Use.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.6.1">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.6.1 %28x86 et x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

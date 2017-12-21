@@ -7,31 +7,51 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "testPersoScript", "testPers
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowsFormsApp1", "WindowsFormsApp1\WindowsFormsApp1.csproj", "{C195DA1F-CB17-439C-BF33-C3EADC471A11}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pcsc-sharp", "..\..\..\Downloads\pcsc-sharp-master\pcsc-sharp-master\pcsc-sharp\pcsc-sharp.csproj", "{459E0FB4-AF42-4123-9923-7EA68CA01B09}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pcsc-sharp", "pcsc-sharp-master\pcsc-sharp\pcsc-sharp.csproj", "{459E0FB4-AF42-4123-9923-7EA68CA01B09}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "AssemblyInfo", "AssemblyInfo", "{0F5DDDB2-D8CF-4F4B-AE9A-E8491C5DF35D}"
+	ProjectSection(SolutionItems) = preProject
+		pcsc-sharp-master\AssemblyInfo\Common.AssemblyInfo.cs = pcsc-sharp-master\AssemblyInfo\Common.AssemblyInfo.cs
+	EndProjectSection
+EndProject
+Project("{840C416C-B8F3-42BC-B0DD-F6BB14C9F8CB}") = "CalypsoChangeKeyInstaller", "CalypsoChangeKeyInstaller\CalypsoChangeKeyInstaller.aiproj", "{22B33F0A-ADF4-48ED-9279-640A47A3E15A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		DefaultBuild|Any CPU = DefaultBuild|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{CB493050-4683-4635-BF1E-EA6178804B79}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{CB493050-4683-4635-BF1E-EA6178804B79}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CB493050-4683-4635-BF1E-EA6178804B79}.DefaultBuild|Any CPU.ActiveCfg = Debug|Any CPU
+		{CB493050-4683-4635-BF1E-EA6178804B79}.DefaultBuild|Any CPU.Build.0 = Debug|Any CPU
 		{CB493050-4683-4635-BF1E-EA6178804B79}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CB493050-4683-4635-BF1E-EA6178804B79}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C195DA1F-CB17-439C-BF33-C3EADC471A11}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C195DA1F-CB17-439C-BF33-C3EADC471A11}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C195DA1F-CB17-439C-BF33-C3EADC471A11}.DefaultBuild|Any CPU.ActiveCfg = Debug|Any CPU
+		{C195DA1F-CB17-439C-BF33-C3EADC471A11}.DefaultBuild|Any CPU.Build.0 = Debug|Any CPU
 		{C195DA1F-CB17-439C-BF33-C3EADC471A11}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C195DA1F-CB17-439C-BF33-C3EADC471A11}.Release|Any CPU.Build.0 = Release|Any CPU
 		{459E0FB4-AF42-4123-9923-7EA68CA01B09}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{459E0FB4-AF42-4123-9923-7EA68CA01B09}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{459E0FB4-AF42-4123-9923-7EA68CA01B09}.DefaultBuild|Any CPU.ActiveCfg = Debug|Any CPU
+		{459E0FB4-AF42-4123-9923-7EA68CA01B09}.DefaultBuild|Any CPU.Build.0 = Debug|Any CPU
 		{459E0FB4-AF42-4123-9923-7EA68CA01B09}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{459E0FB4-AF42-4123-9923-7EA68CA01B09}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22B33F0A-ADF4-48ED-9279-640A47A3E15A}.Debug|Any CPU.ActiveCfg = DefaultBuild
+		{22B33F0A-ADF4-48ED-9279-640A47A3E15A}.Debug|Any CPU.Build.0 = DefaultBuild
+		{22B33F0A-ADF4-48ED-9279-640A47A3E15A}.DefaultBuild|Any CPU.ActiveCfg = DefaultBuild
+		{22B33F0A-ADF4-48ED-9279-640A47A3E15A}.DefaultBuild|Any CPU.Build.0 = DefaultBuild
+		{22B33F0A-ADF4-48ED-9279-640A47A3E15A}.Release|Any CPU.ActiveCfg = DefaultBuild
+		{22B33F0A-ADF4-48ED-9279-640A47A3E15A}.Release|Any CPU.Build.0 = DefaultBuild
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {DCD628BD-029A-4F70-AE04-0633BCC7330C}
+		SolutionGuid = {6B25CB56-EB0B-4240-9675-F0B144E3847A}
 	EndGlobalSection
 EndGlobal
