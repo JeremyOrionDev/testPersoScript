@@ -35,7 +35,6 @@
             this.label2 = new System.Windows.Forms.Label();
             this.txBxATR = new System.Windows.Forms.TextBox();
             this.lblSelectReader = new System.Windows.Forms.Label();
-            this.btnCreationStructure2 = new System.Windows.Forms.Button();
             this.lblProtocol = new System.Windows.Forms.Label();
             this.cBxProtocol = new System.Windows.Forms.ComboBox();
             this.lblShareMode = new System.Windows.Forms.Label();
@@ -45,8 +44,8 @@
             this.txBxAID = new System.Windows.Forms.TextBox();
             this.label3 = new System.Windows.Forms.Label();
             this.txBxappSN = new System.Windows.Forms.TextBox();
-            this.label4 = new System.Windows.Forms.Label();
             this.btnQuitter = new System.Windows.Forms.Button();
+            this.btnIso1443 = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // label1
@@ -69,10 +68,10 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(95, 101);
+            this.button1.Location = new System.Drawing.Point(114, 101);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 4;
+            this.button1.TabIndex = 5;
             this.button1.Text = "Connecte";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
@@ -102,16 +101,6 @@
             this.lblSelectReader.Size = new System.Drawing.Size(153, 13);
             this.lblSelectReader.TabIndex = 15;
             this.lblSelectReader.Text = "Veuillez sélectionner un lecteur";
-            // 
-            // btnCreationStructure2
-            // 
-            this.btnCreationStructure2.Location = new System.Drawing.Point(95, 216);
-            this.btnCreationStructure2.Name = "btnCreationStructure2";
-            this.btnCreationStructure2.Size = new System.Drawing.Size(75, 23);
-            this.btnCreationStructure2.TabIndex = 18;
-            this.btnCreationStructure2.Text = "Structure 2";
-            this.btnCreationStructure2.UseVisualStyleBackColor = true;
-            this.btnCreationStructure2.Click += new System.EventHandler(this.btnCreationStructure2_Click);
             // 
             // lblProtocol
             // 
@@ -191,14 +180,6 @@
             this.txBxappSN.Size = new System.Drawing.Size(225, 20);
             this.txBxappSN.TabIndex = 30;
             // 
-            // label4
-            // 
-            this.label4.Location = new System.Drawing.Point(16, 216);
-            this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(54, 30);
-            this.label4.TabIndex = 31;
-            this.label4.Text = "Créer Structure";
-            // 
             // btnQuitter
             // 
             this.btnQuitter.Location = new System.Drawing.Point(245, 216);
@@ -209,13 +190,23 @@
             this.btnQuitter.UseVisualStyleBackColor = true;
             this.btnQuitter.Click += new System.EventHandler(this.btnQuitter_Click);
             // 
+            // btnIso1443
+            // 
+            this.btnIso1443.Location = new System.Drawing.Point(19, 101);
+            this.btnIso1443.Name = "btnIso1443";
+            this.btnIso1443.Size = new System.Drawing.Size(75, 23);
+            this.btnIso1443.TabIndex = 4;
+            this.btnIso1443.Text = "iso1443";
+            this.btnIso1443.UseVisualStyleBackColor = true;
+            this.btnIso1443.Click += new System.EventHandler(this.btnIso1443_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(344, 265);
+            this.Controls.Add(this.btnIso1443);
             this.Controls.Add(this.btnQuitter);
-            this.Controls.Add(this.label4);
             this.Controls.Add(this.txBxappSN);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.txBxAID);
@@ -225,7 +216,6 @@
             this.Controls.Add(this.lblShareMode);
             this.Controls.Add(this.cBxProtocol);
             this.Controls.Add(this.lblProtocol);
-            this.Controls.Add(this.btnCreationStructure2);
             this.Controls.Add(this.lblSelectReader);
             this.Controls.Add(this.txBxATR);
             this.Controls.Add(this.label2);
@@ -245,20 +235,19 @@
         public System.Windows.Forms.ComboBox cbReaders;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.TextBox txBxATR;
-        private System.Windows.Forms.Label lblSelectReader;
-        private System.Windows.Forms.Button btnCreationStructure2;
         private System.Windows.Forms.Label lblProtocol;
-        private System.Windows.Forms.ComboBox cBxProtocol;
         private System.Windows.Forms.Label lblShareMode;
-        private System.Windows.Forms.ComboBox cBxShareMode;
         private System.Windows.Forms.Button btnDeconnecte;
         private System.Windows.Forms.Label lblVendor;
-        private System.Windows.Forms.TextBox txBxAID;
-        private System.Windows.Forms.TextBox txBxappSN;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Button btnQuitter;
+        public System.Windows.Forms.TextBox txBxATR;
+        public System.Windows.Forms.ComboBox cBxProtocol;
+        public System.Windows.Forms.ComboBox cBxShareMode;
+        public System.Windows.Forms.TextBox txBxAID;
+        public System.Windows.Forms.TextBox txBxappSN;
+        public System.Windows.Forms.Label lblSelectReader;
+        private System.Windows.Forms.Button btnIso1443;
     }
 }
 

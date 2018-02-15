@@ -4,28 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{C195DA1F-CB17-439C-BF33-C3EADC471A11}</ProjectGuid>
+    <ProjectGuid>{65074F0D-047E-4BF2-AD3E-2D4F90141A19}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>WindowsFormsApp1</RootNamespace>
-    <AssemblyName>WindowsFormsApp1</AssemblyName>
+    <RootNamespace>Desfire</RootNamespace>
+    <AssemblyName>Desfire</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <PublishUrl>publish\</PublishUrl>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -46,10 +31,31 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationIcon>Icons8-Ios7-Finance-Card-In-Use.ico</ApplicationIcon>
-  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AtlanticZeiser.CpiPc.Reader.Smartware">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Atlantic Zeiser\Scripting Studio\AtlanticZeiser.CpiPc.Reader.Smartware.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Compiler">
+      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Compiler.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Converter">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Atlantic Zeiser\Scripting Studio\AtlanticZeiser.CpiPc.Scripting.Converter.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Scripting.CSharp">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Atlantic Zeiser\Scripting Studio\AtlanticZeiser.CpiPc.Scripting.CSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Xml.Common">
+      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Xml.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Xml.Iso7816">
+      <HintPath>..\..\test_CRC\test_CRC\AtlanticZeiser.CpiPc.Scripting.Xml.Iso7816.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Scripting.Xml.Mifare">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Atlantic Zeiser\Scripting Studio\AtlanticZeiser.CpiPc.Scripting.Xml.Mifare.dll</HintPath>
+    </Reference>
+    <Reference Include="AtlanticZeiser.CpiPc.Tools">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Atlantic Zeiser\Scripting Studio\AtlanticZeiser.CpiPc.Tools.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -63,18 +69,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="controleurPcsc.cs" />
-    <Compile Include="Form1.cs">
+    <Compile Include="Class1.cs" />
+    <Compile Include="formDesfire.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Include="formDesfire.Designer.cs">
+      <DependentUpon>formDesfire.cs</DependentUpon>
     </Compile>
-    <Compile Include="Iso1443B.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Form1.resx">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <EmbeddedResource Include="formDesfire.resx">
+      <DependentUpon>formDesfire.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -86,7 +91,6 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -101,24 +105,13 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Icons8-Ios7-Finance-Card-In-Use.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include=".NETFramework,Version=v4.6.1">
-      <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 4.6.1 %28x86 et x64%29</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\pcsc-sharp-master\pcsc-sharp\pcsc-sharp.csproj">
       <Project>{459e0fb4-af42-4123-9923-7ea68ca01b09}</Project>
       <Name>pcsc-sharp</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\WindowsFormsApp1\WindowsFormsApp1.csproj">
+      <Project>{c195da1f-cb17-439c-bf33-c3eadc471a11}</Project>
+      <Name>WindowsFormsApp1</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
