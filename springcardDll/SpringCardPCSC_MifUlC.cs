@@ -28,7 +28,7 @@ using System.Collections;
 using System.Threading;
 using System.Runtime.InteropServices;
 
-namespace SpringCard.PCSC
+namespace SpringCardPCSC
 {
   public abstract partial class SCARD
   {

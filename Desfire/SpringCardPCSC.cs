@@ -7,10 +7,10 @@
  *   SpringCard's wrapper for PC/SC API
  *
  * COPYRIGHT
- *   Copyright (c) 2010-2012 SpringCard - www.springcard.com
+ *   Copyright (c) 2010-2016 SpringCard - www.springcard.com
  *
  * AUTHOR
- *   Johann.D and Emilie.C / SpringCard
+ *   Johann.D, Emilie.C and Jerome.I / SpringCard
  *
  * HISTORY
  *   ECL ../../2009 : early drafts
@@ -22,21 +22,18 @@
  *   JDA 12/02/2012 : added the SCardReaderList object to monitor all the readers
  *   JDA 26/03/2012 : added SCARD_PCI_T0, SCARD_PCI_T1 and SCARD_PCI_RAW
  *   JDA 07/02/2012 : minor improvements
+ *   JDA 02/03/2016 : added Linux/Unix portability, support for execution on Mono
  *
  * PORTABILITY
- *   .NET on Win32 (not yet validated on Win64 --> please compile for x86 target)
+ *   .NET
  *
  **/
 using System;
-using System.Collections.ObjectModel;
-using System.Collections;
 using System.ComponentModel;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
-using System.Threading;
 
-namespace SpringCardPCSC
+namespace SpringCard.PCSC
 {
 
 	/**c* SpringCardPCSC/SCARD
@@ -45,11 +42,15 @@ namespace SpringCardPCSC
 	 *   SCARD
 	 * 
 	 * DESCRIPTION
-	 *   Static class that gives access to PC/SC functions (SCard... provided by winscard.dll)
+	 *   Static class that gives access to PC/SC functions (SCard... provided by winscard.dll or libpcsclite)
 	 *
 	 **/
 	public abstract partial class SCARD
 	{
+		const string DllName_Win32 = "winscard.dll";
+		const string DllName_PcscLite = "libpcsclite.so.1";
+		const string DllName_PcscMacOs = "PCSC.framework/PCSC";
+    
 		public static SCardReader DefaultReader = null;
 		public static SCardChannel DefaultCardChannel = null;
 
@@ -73,10 +74,14 @@ namespace SpringCardPCSC
 		public const uint PROTOCOL_T1 = 2;
 		public const uint PROTOCOL_RAW = 4;
 
-		public const uint LEAVE_CARD = 0; // Don't do anything special on close
-		public const uint RESET_CARD = 1; // Reset the card on close
-		public const uint UNPOWER_CARD = 2; // Power down the card on close
-		public const uint EJECT_CARD = 3; // Eject the card on close
+		public const uint LEAVE_CARD = 0;
+		// Don't do anything special on close
+		public const uint RESET_CARD = 1;
+		// Reset the card on close
+		public const uint UNPOWER_CARD = 2;
+		// Power down the card on close
+		public const uint EJECT_CARD = 3;
+		// Eject the card on close
 
 		public const uint STATE_UNAWARE = 0x00000000;
 		public const uint STATE_IGNORE = 0x00000001;
@@ -93,7 +98,7 @@ namespace SpringCardPCSC
 
 		public const uint IOCTL_CSB6_PCSC_ESCAPE = 0x00312000;
 		public const uint IOCTL_MS_CCID_ESCAPE = 0x003136B0;
-
+		public const uint IOCTL_PCSCLITE_ESCAPE = 0x42000000 + 1;
 		#endregion
 
 		#region Error codes
@@ -158,7 +163,59 @@ namespace SpringCardPCSC
 		public const uint W_CANCELLED_BY_USER = 0x8010006E;
 		public const uint W_CARD_NOT_AUTHENTICATED = 0x8010006F;
 		#endregion
+		
+		enum System
+		{
+			Unknown,
+			Win32,
+			Unix,
+			MacOs}
 
+		;
+		private static System system = System.Unknown;
+		
+		private static bool IsRunningOnMacOs()
+		{
+			IntPtr buf = IntPtr.Zero;
+			try {
+				buf = Marshal.AllocHGlobal(8192);
+				/* Hacktastic way of getting sysname from uname () */
+				if (uname(buf) == 0) {
+					string os = Marshal.PtrToStringAnsi(buf);
+					if (os == "Darwin")
+						return true;
+				}
+			} catch {
+			} finally {
+				if (buf != IntPtr.Zero)
+					Marshal.FreeHGlobal(buf);
+			}
+			return false;
+		}
+    
+		[DllImport("libc")]
+		static extern int uname(IntPtr buf);
+    
+		private static System GetSystem()
+		{
+			if (system == System.Unknown) {
+				OperatingSystem os = Environment.OSVersion;
+				PlatformID pid = os.Platform;
+				if (pid == PlatformID.Unix) {
+					system = System.Unix;
+					if (IsRunningOnMacOs())
+						system = System.MacOs;
+
+				} else {
+					system = System.Win32;
+				}  
+
+			} 
+      
+			return system;
+      
+		}
+    
 		#region Definition of the 'native' structures
 		[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] public struct READERSTATE
 		{
@@ -167,57 +224,177 @@ namespace SpringCardPCSC
 			internal uint dwCurrentState;
 			internal uint dwEventState;
 			internal uint cbAtr;
-			[MarshalAs (UnmanagedType.ByValArray, SizeConst = 0x24, ArraySubType = UnmanagedType.U1)]
+			[MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x24, ArraySubType = UnmanagedType.U1)]
 			internal byte[] rgbAtr;
 		}
+		
+		[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)] public struct READERSTATE_PCSCLITE
+		{
+			[MarshalAs(UnmanagedType.LPStr)] internal string szReader;
+			internal IntPtr pvUserData;
+			internal uint dwCurrentState;
+			internal uint dwEventState;
+			internal uint cbAtr;
+			[MarshalAs(UnmanagedType.ByValArray, SizeConst = 0x24, ArraySubType = UnmanagedType.U1)]
+			internal byte[] rgbAtr;
+		}
+
+		[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode, Pack = 1)] public struct READERSTATE_PCSCMACOS
+		{
+			[MarshalAs(UnmanagedType.LPStr)] internal string szReader;
+			internal IntPtr pvUserData;
+			internal uint dwCurrentState;
+			internal uint dwEventState;
+			internal uint cbAtr;
+			[MarshalAs(UnmanagedType.ByValArray, SizeConst = 33, ArraySubType = UnmanagedType.U1)] internal byte[] rgbAtr;
+		}
+    
 		#endregion
 
 		#region The ugly SCARD_PCI_xx global variables
 
-		[DllImport("kernel32.dll")]
-		private extern static IntPtr LoadLibrary(string fileName) ;
+		[DllImport("kernel32.dll", EntryPoint = "LoadLibrary")]
+		private extern static IntPtr LoadLibrary_Win32(string fileName);
+		[DllImport("kernel32.dll", EntryPoint = "FreeLibrary")]
+		private extern static void FreeLibrary_Win32(IntPtr handle);
+		[DllImport("kernel32.dll", EntryPoint = "GetProcAddress")]
+		private extern static IntPtr GetProcAddress_Win32(IntPtr handle, string procName);
+
+		[DllImport("libdl.so", EntryPoint = "dlopen")]
+		private static extern IntPtr dlopen_unix(string fileName, int flags);
+		[DllImport("libdl.so", EntryPoint = "dlsym")]
+		private static extern IntPtr dlsym_unix(IntPtr handle, string symbol);
+		[DllImport("libdl.so", EntryPoint = "dlclose")]
+		private static extern int dlclose_unix(IntPtr handle);
+		[DllImport("libdl.so", EntryPoint = "dlerror")]
+		private static extern IntPtr dlerror_unix();
+
+		[DllImport("libdl.dylib", EntryPoint = "dlopen")]
+		private static extern IntPtr dlopen_macos(string fileName, int flags);
+		[DllImport("libdl.dylib", EntryPoint = "dlsym")]
+		private static extern IntPtr dlsym_macos(IntPtr handle, string symbol);
+		[DllImport("libdl.dylib", EntryPoint = "dlclose")]
+		private static extern int dlclose_macos(IntPtr handle);
+		[DllImport("libdl.dylib", EntryPoint = "dlerror")]
+		private static extern IntPtr dlerror_macos();
+    
+		public static IntPtr LoadLibrary_Unix(string fileName)
+		{
+			const int RTLD_NOW = 2;
+			if (GetSystem() != System.MacOs) {
+				return dlopen_unix(fileName, RTLD_NOW);
+			} else {
+				return dlopen_macos(fileName, RTLD_NOW);
+			}
+		}
+
+		public static void FreeLibrary_Unix(IntPtr handle)
+		{
+			if (GetSystem() != System.MacOs) {
+				dlclose_unix(handle);
+			} else {
+				dlclose_macos(handle);
+			}
+		}
+
+		public static IntPtr GetProcAddress_Unix(IntPtr dllHandle, string name)
+		{
+			IntPtr res, errPtr;
+
+			if (GetSystem() != System.MacOs) {
+				dlerror_unix();
+			} else {
+				dlerror_macos();
+			}
+      
+			if (GetSystem() != System.MacOs) {
+				res = dlsym_unix(dllHandle, name);
+				errPtr = dlerror_unix();
+			} else {
+				res = dlsym_macos(dllHandle, name);
+				errPtr = dlerror_macos(); 
+			} 
+      
+			if (errPtr != IntPtr.Zero) {
+				throw new Exception("dlsym: " + Marshal.PtrToStringAnsi(errPtr));
+			}
+      
+			return res;
+		}
+
+		private static IntPtr LoadLibrary(string fileName)
+		{
+			if (GetSystem() != System.Win32) {
+				return LoadLibrary_Unix(fileName);
+			} else {
+				return LoadLibrary_Win32(fileName);
+			}
+		}
 		
-		[DllImport("kernel32.dll")]
-		private extern static void FreeLibrary(IntPtr handle) ;
+		private static void FreeLibrary(IntPtr handle)
+		{
+			if (GetSystem() != System.Win32) {
+				FreeLibrary_Unix(handle);
+			} else {
+				FreeLibrary_Win32(handle);
+			}
+		}
 		
-		[DllImport("kernel32.dll")]
-		private extern static IntPtr GetProcAddress(IntPtr handle, string procName);
+		private static IntPtr GetProcAddress(IntPtr handle, string procName)
+		{
+			if (GetSystem() != System.Win32) {
+				return GetProcAddress_Unix(handle, procName);
+			} else {
+				return GetProcAddress_Win32(handle, procName);
+			}
+		}
 		
-		/* Get the address of SCARD_PCI_T0 from "Winscard.dll" */
+		/* Handle of the library */
+		private static IntPtr DllHandle = IntPtr.Zero;
+		
+		private static bool LoadDll()
+		{
+			if (DllHandle == IntPtr.Zero) {
+				if (GetSystem() == System.Unix) {
+					DllHandle = LoadLibrary(DllName_PcscLite);
+				} else if (GetSystem() == System.MacOs) {
+					DllHandle = LoadLibrary(DllName_PcscMacOs);
+				} else {
+					DllHandle = LoadLibrary(DllName_Win32);
+				}
+			}
+			return (DllHandle != IntPtr.Zero);
+		}
+		
+		/* Get the address of SCARD_PCI_T0 in the DLL */
 		private static IntPtr _scard_pci_t0 = IntPtr.Zero;
 		public static IntPtr PCI_T0()
 		{
-			if (_scard_pci_t0 == IntPtr.Zero)
-			{
-				IntPtr handle = LoadLibrary("Winscard.dll") ;
-				_scard_pci_t0 = GetProcAddress(handle, "g_rgSCardT0Pci");
-				FreeLibrary(handle) ;
+			if (_scard_pci_t0 == IntPtr.Zero) {
+				if (LoadDll())
+					_scard_pci_t0 = GetProcAddress(DllHandle, "g_rgSCardT0Pci");
 			}
 			return _scard_pci_t0;
 		}
 
-		/* Get the address of SCARD_PCI_T1 from "Winscard.dll" */
+		/* Get the address of SCARD_PCI_T1 in the DLL */
 		private static IntPtr _scard_pci_t1 = IntPtr.Zero;
 		public static IntPtr PCI_T1()
 		{
-			if (_scard_pci_t1 == IntPtr.Zero)
-			{
-				IntPtr handle = LoadLibrary("Winscard.dll") ;
-				_scard_pci_t1 = GetProcAddress(handle, "g_rgSCardT1Pci");
-				FreeLibrary(handle) ;
+			if (_scard_pci_t1 == IntPtr.Zero) {
+				if (LoadDll())
+					_scard_pci_t1 = GetProcAddress(DllHandle, "g_rgSCardT1Pci");
 			}
 			return _scard_pci_t1;
 		}
 
-		/* Get the address of SCARD_PCI_RAW from "Winscard.dll" */
+		/* Get the address of SCARD_PCI_RAW in the DLL */
 		private static IntPtr _scard_pci_raw = IntPtr.Zero;
 		public static IntPtr PCI_RAW()
 		{
-			if (_scard_pci_raw == IntPtr.Zero)
-			{
-				IntPtr handle = LoadLibrary("Winscard.dll") ;
-				_scard_pci_raw = GetProcAddress(handle, "g_rgSCardRawPci");
-				FreeLibrary(handle) ;
+			if (_scard_pci_raw == IntPtr.Zero) {
+				if (LoadDll())
+					_scard_pci_raw = GetProcAddress(DllHandle, "g_rgSCardRawPci");
 			}
 			return _scard_pci_raw;
 		}
@@ -234,11 +411,35 @@ namespace SpringCardPCSC
 		 *   .NET wrapper for SCardEstablishContext
 		 *
 		 **/
-		[DllImport("WinScard.dll", EntryPoint = "SCardEstablishContext")]
-		public static extern uint EstablishContext(uint dwScope,
-		                                           IntPtr nNotUsed1,
-		                                           IntPtr nNotUsed2,
-		                                           ref IntPtr phContext);
+		[DllImport(DllName_Win32, EntryPoint = "SCardEstablishContext")]
+		public static extern uint EstablishContext_Win32(uint dwScope,
+			IntPtr nNotUsed1,
+			IntPtr nNotUsed2,
+			ref IntPtr phContext);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardEstablishContext")]
+		public static extern uint EstablishContext_PcscLite(uint dwScope,
+			IntPtr nNotUsed1,
+			IntPtr nNotUsed2,
+			ref IntPtr phContext);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardEstablishContext")]
+		public static extern uint EstablishContext_PcscMacOs(uint dwScope,
+			IntPtr nNotUsed1,
+			IntPtr nNotUsed2,
+			ref IntPtr phContext);
+		public static uint EstablishContext(uint dwScope,
+			IntPtr nNotUsed1,
+			IntPtr nNotUsed2,
+			ref IntPtr phContext)
+		{
+
+			if (GetSystem() == System.Unix) {
+				return EstablishContext_PcscLite(dwScope, nNotUsed1, nNotUsed2, ref phContext);
+			} else if (GetSystem() == System.MacOs) {
+				return EstablishContext_PcscMacOs(dwScope, nNotUsed1, nNotUsed2, ref phContext);
+			} else {
+				return EstablishContext_Win32(dwScope, nNotUsed1, nNotUsed2, ref phContext);
+			}		
+		}
 
 		/**f* SCARD/ReleaseContext
 		 *
@@ -249,9 +450,24 @@ namespace SpringCardPCSC
 		 *   .NET wrapper for SCardReleaseContext
 		 *
 		 **/
-		[DllImport("WinScard.dll", EntryPoint = "SCardReleaseContext")]
-		public static extern uint ReleaseContext(IntPtr Context);
-
+		[DllImport(DllName_Win32, EntryPoint = "SCardReleaseContext")]
+		public static extern uint ReleaseContext_Win32(IntPtr Context);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardReleaseContext")]
+		public static extern uint ReleaseContext_PcscLite(IntPtr Context);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardReleaseContext")]
+		public static extern uint ReleaseContext_PcscMacOs(IntPtr Context);
+      
+		public static uint ReleaseContext(IntPtr Context)
+		{
+			if (GetSystem() == System.Unix) {
+				return ReleaseContext_PcscLite(Context);
+			} else if (GetSystem() == System.MacOs) {
+				return ReleaseContext_PcscMacOs(Context);
+			} else {
+				return ReleaseContext_Win32(Context);
+			}
+		}
+		
 		/**f* SCARD/ListReaders
 		 *
 		 * NAME
@@ -261,13 +477,55 @@ namespace SpringCardPCSC
 		 *   .NET wrapper for SCardListReaders (UNICODE implementation)
 		 *
 		 **/
-		[DllImport
-		 ("winscard.dll", EntryPoint = "SCardListReadersW", SetLastError =
-		  true, CharSet =
-		  CharSet.Unicode)] public static extern uint ListReaders(IntPtr context,
-		                                                        string groups,
-		                                                        string readers,
-		                                                        ref uint size);
+		[DllImport(DllName_Win32, EntryPoint = "SCardListReadersW", SetLastError = true, CharSet = CharSet.Unicode)]
+		public static extern uint ListReaders_Win32(IntPtr context,
+			string groups,
+			string readers,
+			ref uint size);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardListReaders", SetLastError = true, CharSet = CharSet.Unicode)]
+		public static extern uint ListReaders_PcscLite(IntPtr context,
+			[MarshalAs(UnmanagedType.LPStr)] string groups,
+			byte[] readers,
+			ref uint size);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardListReaders", SetLastError = true, CharSet = CharSet.Unicode)]
+		public static extern uint ListReaders_PcscMacOs(IntPtr context,
+			[MarshalAs(UnmanagedType.LPStr)] string groups,
+			byte[] readers,
+			ref uint size);
+		public static uint ListReaders(IntPtr context, string groups, ref string readers, ref uint size)
+		{
+			uint rc;
+
+			byte[] r = null;
+			if (readers != null) {
+				/* The terminal '00' shall not be added here */
+				/* Two '00' characters will be added by the  */
+				/* SCardListReaders function in library      */
+				r = new byte[readers.Length];
+				for (int i = 0; i < readers.Length; i++)
+					r[i] = (byte)readers[i];
+			}
+      
+			if (GetSystem() == System.Unix) {
+				rc = ListReaders_PcscLite(context, groups, r, ref size);
+			} else {
+				rc = ListReaders_PcscMacOs(context, groups, r, ref size);
+			}    
+      
+			if (r != null) {
+				readers = "";
+				for (int i = 0; i < r.Length; i++)
+					readers += (char)r[i];
+			}
+
+			return rc;
+		}
+
+		
+		public static uint ListReaders(IntPtr context, string groups, string readers, ref uint size)
+		{
+			return  ListReaders_Win32(context, groups, readers, ref size);
+		}
 
 		/**f* SCARD/GetStatusChange
 		 *
@@ -278,23 +536,105 @@ namespace SpringCardPCSC
 		 *   .NET wrapper for SCardGetStatusChange (UNICODE implementation)
 		 *
 		 **/
-		[DllImport
-		 ("winscard.dll", EntryPoint = "SCardGetStatusChangeW", CharSet =
-		  CharSet.
-		  Unicode)] public static extern uint GetStatusChange(IntPtr hContext,
-		                                                    uint dwTimeout,[In,
-		                                                                    Out,
-		                                                                    MarshalAs
-		                                                                    (UnmanagedType.
-		                                                                     LPArray,
-		                                                                     SizeParamIndex
-		                                                                     =
-		                                                                     3)]
-		                                                    SCARD.
-		                                                    READERSTATE
-		                                                    []rgReaderState,
-		                                                    uint cReaders);
+		[DllImport(DllName_Win32, EntryPoint = "SCardGetStatusChangeW", CharSet = CharSet.Unicode)]
+		public static extern uint GetStatusChange_Win32(IntPtr hContext,
+			uint dwTimeout,
+			[In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] SCARD.READERSTATE[] rgReaderState,
+			uint cReaders);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardGetStatusChange", CharSet = CharSet.Unicode)]
+		public static extern uint GetStatusChange_PcscLite(IntPtr hContext, uint dwTimeout,
+			[In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] SCARD.READERSTATE_PCSCLITE[] rgReaderState,
+			uint cReaders);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardGetStatusChange", CharSet = CharSet.Unicode)]
+		public static extern uint GetStatusChange_PcscMacOs(IntPtr hContext, uint dwTimeout,
+			[In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] SCARD.READERSTATE_PCSCMACOS[] rgReaderState,
+			uint cReaders);
+		public static uint GetStatusChange(IntPtr hContext, uint dwTimeout,
+			[In, Out, MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] SCARD.READERSTATE[] rgReaderState,
+			uint cReaders)
+		{
+			if (GetSystem() == System.Unix) {
+        
+				SCARD.READERSTATE_PCSCLITE[] rgReaderState_PcscLite = new SCARD.READERSTATE_PCSCLITE[rgReaderState.Length];
+				        
+				for (int i = 0; i < rgReaderState.Length; i++) {
+					rgReaderState_PcscLite[i].szReader = rgReaderState[i].szReader;
+					rgReaderState_PcscLite[i].pvUserData = rgReaderState[i].pvUserData;
+					rgReaderState_PcscLite[i].dwCurrentState = rgReaderState[i].dwCurrentState;
+					rgReaderState_PcscLite[i].dwEventState = rgReaderState[i].dwEventState;
+					rgReaderState_PcscLite[i].cbAtr = rgReaderState[i].cbAtr;
+					rgReaderState_PcscLite[i].rgbAtr = rgReaderState[i].rgbAtr;
+				}
+        
+				uint rc = GetStatusChange_PcscLite(hContext, dwTimeout, rgReaderState_PcscLite, cReaders);
 
+				for (int i = 0; i < rgReaderState.Length; i++) {
+					rgReaderState[i].szReader = rgReaderState_PcscLite[i].szReader;
+					rgReaderState[i].pvUserData = rgReaderState_PcscLite[i].pvUserData;
+					rgReaderState[i].dwCurrentState = rgReaderState_PcscLite[i].dwCurrentState;
+					rgReaderState[i].dwEventState = rgReaderState_PcscLite[i].dwEventState;
+					rgReaderState[i].cbAtr = rgReaderState_PcscLite[i].cbAtr;
+					rgReaderState[i].rgbAtr = rgReaderState_PcscLite[i].rgbAtr;
+
+				}
+
+				return rc;       
+        
+			} else if (GetSystem() == System.MacOs) {
+				SCARD.READERSTATE_PCSCMACOS[] rgReaderState_PcscMacOs = new SCARD.READERSTATE_PCSCMACOS[rgReaderState.Length];
+				for (int i = 0; i < rgReaderState.Length; i++) {
+					rgReaderState_PcscMacOs[i].szReader = rgReaderState[i].szReader;
+					rgReaderState_PcscMacOs[i].pvUserData = rgReaderState[i].pvUserData;
+					rgReaderState_PcscMacOs[i].dwCurrentState = rgReaderState[i].dwCurrentState;
+					rgReaderState_PcscMacOs[i].dwEventState = rgReaderState[i].dwEventState;
+					rgReaderState_PcscMacOs[i].cbAtr = rgReaderState[i].cbAtr;
+					rgReaderState_PcscMacOs[i].rgbAtr = rgReaderState[i].rgbAtr;
+
+				}
+        
+				uint rc = GetStatusChange_PcscMacOs(hContext, dwTimeout, rgReaderState_PcscMacOs, cReaders);
+
+				for (int i = 0; i < rgReaderState.Length; i++) {
+					rgReaderState[i].szReader = rgReaderState_PcscMacOs[i].szReader;
+					rgReaderState[i].pvUserData = rgReaderState_PcscMacOs[i].pvUserData;
+					rgReaderState[i].dwCurrentState = rgReaderState_PcscMacOs[i].dwCurrentState;
+					rgReaderState[i].dwEventState = rgReaderState_PcscMacOs[i].dwEventState;
+					rgReaderState[i].cbAtr = rgReaderState_PcscMacOs[i].cbAtr;
+					rgReaderState[i].rgbAtr = rgReaderState_PcscMacOs[i].rgbAtr;
+				}
+				return rc;
+
+			} else {
+				return GetStatusChange_Win32(hContext, dwTimeout, rgReaderState, cReaders);
+			}
+		}
+		
+		/**f* SCARD/Cancel
+		 *
+		 * NAME
+		 *   SCARD.Cancel
+		 *
+		 * DESCRIPTION
+		 *   .NET wrapper for SCardCancel
+		 *
+		 **/
+		[DllImport(DllName_Win32, EntryPoint = "SCardCancel")]
+		public static extern uint Cancel_Win32(IntPtr hContext);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardCancel")]
+		public static extern uint Cancel_PcscLite(IntPtr hContext);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardCancel")]
+		public static extern uint Cancel_PcscMacOs(IntPtr hContext);
+		public static uint Cancel(IntPtr hContext)
+		{
+			if (GetSystem() == System.Unix) {
+				return Cancel_PcscLite(hContext);
+			} else if (GetSystem() == System.MacOs) {
+				return Cancel_PcscMacOs(hContext);
+			} else {
+				return Cancel_Win32(hContext);
+			}		
+		}
+		
 		/**f* SCARD/Connect
 		 *
 		 * NAME
@@ -304,15 +644,42 @@ namespace SpringCardPCSC
 		 *   .NET wrapper for SCardConnect (UNICODE implementation)
 		 *
 		 **/
-		[DllImport
-		 ("WinScard.dll", EntryPoint = "SCardConnectW", CharSet =
-		  CharSet.Unicode)] public static extern uint Connect(IntPtr hContext,
-		                                                    string cReaderName,
-		                                                    uint dwShareMode,
-		                                                    uint dwPrefProtocol,
-		                                                    ref IntPtr phCard,
-		                                                    ref uint
-		                                                    ActiveProtocol);
+		[DllImport(DllName_Win32, EntryPoint = "SCardConnectW", CharSet = CharSet.Unicode)]
+		public static extern uint Connect_Win32(IntPtr hContext,
+			string cReaderName,
+			uint dwShareMode,
+			uint dwPrefProtocol,
+			ref IntPtr phCard,
+			ref uint ActiveProtocol);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardConnect", CharSet = CharSet.Unicode)]
+		public static extern uint Connect_PcscLite(IntPtr hContext,
+			[MarshalAs(UnmanagedType.LPStr)] string cReaderName,
+			uint dwShareMode,
+			uint dwPrefProtocol,
+			ref IntPtr phCard,
+			ref uint ActiveProtocol);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardConnect", CharSet = CharSet.Unicode)]
+		public static extern uint Connect_PcscMacOs(IntPtr hContext,
+			[MarshalAs(UnmanagedType.LPStr)] string cReaderName,
+			uint dwShareMode,
+			uint dwPrefProtocol,
+			ref IntPtr phCard,
+			ref uint ActiveProtocol);
+		public static uint Connect(IntPtr hContext,
+			string cReaderName,
+			uint dwShareMode,
+			uint dwPrefProtocol,
+			ref IntPtr phCard,
+			ref uint ActiveProtocol)
+		{
+			if (GetSystem() == System.Unix) {
+				return Connect_PcscLite(hContext, cReaderName, dwShareMode, dwPrefProtocol, ref phCard, ref ActiveProtocol);
+			} else if (GetSystem() == System.MacOs) {
+				return Connect_PcscMacOs(hContext, cReaderName, dwShareMode, dwPrefProtocol, ref phCard, ref ActiveProtocol);
+			} else {
+				return Connect_Win32(hContext, cReaderName, dwShareMode, dwPrefProtocol, ref phCard, ref ActiveProtocol);
+			}
+		}
 
 		/**f* SCARD/Reconnect
 		 *
@@ -323,12 +690,34 @@ namespace SpringCardPCSC
 		 *   .NET wrapper for SCardReconnect
 		 *
 		 **/
-		[DllImport("winscard.dll", EntryPoint = "SCardReconnect")]
-		public static extern uint Reconnect(IntPtr hCard,
-		                                    uint dwShareMode,
-		                                    uint dwPrefProtocol, uint swInit,
-		                                    ref uint ActiveProtocol);
-
+		[DllImport(DllName_Win32, EntryPoint = "SCardReconnect")]
+		public static extern uint Reconnect_Win32(IntPtr hCard,
+			uint dwShareMode,
+			uint dwPrefProtocol, uint swInit,
+			ref uint ActiveProtocol);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardReconnect")]
+		public static extern uint Reconnect_PcscLite(IntPtr hCard,
+			uint dwShareMode,
+			uint dwPrefProtocol, uint swInit,
+			ref uint ActiveProtocol);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardReconnect")]
+		public static extern uint Reconnect_PcscMacOs(IntPtr hCard,
+			uint dwShareMode,
+			uint dwPrefProtocol, uint swInit,
+			ref uint ActiveProtocol);
+		public static uint Reconnect(IntPtr hCard, uint dwShareMode,
+			uint dwPrefProtocol, uint swInit,
+			ref uint ActiveProtocol)
+		{
+			if (GetSystem() == System.Unix) {
+				return Reconnect_PcscLite(hCard, dwShareMode, dwPrefProtocol, swInit, ref ActiveProtocol);
+			} else if (GetSystem() == System.MacOs) {
+				return Reconnect_PcscMacOs(hCard, dwShareMode, dwPrefProtocol, swInit, ref ActiveProtocol);
+			} else {
+				return Reconnect_Win32(hCard, dwShareMode, dwPrefProtocol, swInit, ref ActiveProtocol);
+			}
+		}
+		
 		/**f* SCARD/Disconnect
 		 *
 		 * NAME
@@ -338,9 +727,24 @@ namespace SpringCardPCSC
 		 *   .NET wrapper for SCardDisconnect
 		 *
 		 **/
-		[DllImport("WinScard.dll", EntryPoint = "SCardDisconnect")]
-		public static extern uint Disconnect(IntPtr hCard, uint Disposition);
+		[DllImport(DllName_Win32, EntryPoint = "SCardDisconnect")]
+		public static extern uint Disconnect_Win32(IntPtr hCard, uint Disposition);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardDisconnect")]
+		public static extern uint Disconnect_PcscLite(IntPtr hCard, uint Disposition);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardDisconnect")]
+		public static extern uint Disconnect_PcscMacOs(IntPtr hCard, uint Disposition);
 
+		public static uint Disconnect(IntPtr hCard, uint Disposition)
+		{
+			if (GetSystem() == System.Unix) {
+				return Disconnect_PcscLite(hCard, Disposition);
+			} else if (GetSystem() == System.MacOs) {
+				return Disconnect_PcscMacOs(hCard, Disposition);
+			} else {
+				return Disconnect_Win32(hCard, Disposition);
+			}
+		}
+	
 		/**f* SCARD/Status
 		 *
 		 * NAME
@@ -350,20 +754,45 @@ namespace SpringCardPCSC
 		 *   .NET wrapper for SCardStatus (UNICODE version)
 		 *
 		 **/
-		[DllImport
-		 ("winscard.dll", EntryPoint = "SCardStatusW", SetLastError =
-		  true, CharSet =
-		  CharSet.Unicode)] public static extern uint Status(IntPtr hCard,
-		                                                   IntPtr
-		                                                   mszReaderNames,
-		                                                   ref uint
-		                                                   pcchReaderLen,
-		                                                   ref uint readerState,
-		                                                   ref uint protocol,
-		                                                   [In,
-		                                                    Out]
-		                                                   byte[]atr_bytes,
-		                                                   ref uint atr_length);
+		[DllImport(DllName_Win32, EntryPoint = "SCardStatusW", SetLastError = true, CharSet = CharSet.Unicode)]
+		public static extern uint Status_Win32(IntPtr hCard,
+			IntPtr mszReaderNames,
+			ref uint pcchReaderLen,
+			ref uint readerState,
+			ref uint protocol,
+			[In, Out] byte[] atr_bytes,
+			ref uint atr_length);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardStatus", SetLastError = true, CharSet = CharSet.Unicode)]
+		public static extern uint Status_PcscLite(IntPtr hCard,
+			IntPtr mszReaderNames,
+			ref uint pcchReaderLen,
+			ref uint readerState,
+			ref uint protocol,
+			[In, Out] byte[] atr_bytes,
+			ref uint atr_length);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardStatus", SetLastError = true, CharSet = CharSet.Unicode)]
+		public static extern uint Status_PcscMacOs(IntPtr hCard,
+			IntPtr mszReaderNames,
+			ref uint pcchReaderLen,
+			ref uint readerState,
+			ref uint protocol,
+			[In, Out] byte[] atr_bytes,
+			ref uint atr_length);
+		public static uint Status(IntPtr hCard, IntPtr mszReaderNames,
+			ref uint pcchReaderLen,
+			ref uint readerState,
+			ref uint protocol,
+			[In, Out] byte[] atr_bytes,
+			ref uint atr_length)
+		{
+			if (GetSystem() == System.Unix) {
+				return Status_PcscLite(hCard, mszReaderNames, ref pcchReaderLen, ref readerState, ref protocol, atr_bytes, ref atr_length);
+			} else if (GetSystem() == System.MacOs) {
+				return Status_PcscMacOs(hCard, mszReaderNames, ref pcchReaderLen, ref readerState, ref protocol, atr_bytes, ref atr_length);
+			} else {
+				return Status_Win32(hCard, mszReaderNames, ref pcchReaderLen, ref readerState, ref protocol, atr_bytes, ref atr_length);
+			}
+		}
 
 		/**f* SCARD/Transmit
 		 *
@@ -374,18 +803,47 @@ namespace SpringCardPCSC
 		 *   .NET wrapper for SCardTransmit
 		 *
 		 **/
-		[DllImport
-		 ("winscard.dll", EntryPoint = "SCardTransmit", SetLastError =
-		  true)] public static extern uint Transmit(IntPtr hCard,
-		                                          IntPtr pioSendPci,
-		                                          byte[]pbSendBuffer,
-		                                          uint cbSendLength,
-		                                          IntPtr pioRecvPci,[In,
-		                                                             Out]
-		                                          byte[]pbRecvBuffer,[In,
-		                                                              Out] ref
-		                                          uint pcbRecvLength);
-
+		[DllImport(DllName_Win32, EntryPoint = "SCardTransmit", SetLastError = true)]
+		public static extern uint Transmit_Win32(IntPtr hCard,
+			IntPtr pioSendPci,
+			byte[] pbSendBuffer,
+			uint cbSendLength,
+			IntPtr pioRecvPci,
+			[In, Out] byte[] pbRecvBuffer,
+			[In, Out] ref uint pcbRecvLength);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardTransmit", SetLastError = true)]
+		public static extern uint Transmit_PcscLite(IntPtr hCard,
+			IntPtr pioSendPci,
+			byte[] pbSendBuffer,
+			uint cbSendLength,
+			IntPtr pioRecvPci,
+			[In, Out] byte[] pbRecvBuffer,
+			[In, Out] ref uint pcbRecvLength);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardTransmit", SetLastError = true)]
+		public static extern uint Transmit_PcscMacOs(IntPtr hCard,
+			IntPtr pioSendPci,
+			byte[] pbSendBuffer,
+			uint cbSendLength,
+			IntPtr pioRecvPci,
+			[In, Out] byte[] pbRecvBuffer,
+			[In, Out] ref uint pcbRecvLength);
+		public static uint Transmit(IntPtr hCard, IntPtr pioSendPci,
+			byte[] pbSendBuffer,
+			uint cbSendLength,
+			IntPtr pioRecvPci,
+			[In, Out] byte[] pbRecvBuffer,
+			[In, Out] ref uint pcbRecvLength)
+		{
+			if (GetSystem() == System.Unix) {
+				return Transmit_PcscLite(hCard, pioSendPci, pbSendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, ref pcbRecvLength);
+			} 
+			if (GetSystem() == System.MacOs) {
+				return Transmit_PcscMacOs(hCard, pioSendPci, pbSendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, ref pcbRecvLength);
+			} else {
+				return Transmit_Win32(hCard, pioSendPci, pbSendBuffer, cbSendLength, pioRecvPci, pbRecvBuffer, ref pcbRecvLength);
+			}
+		}
+		
 		/**f* SCARD/Control
 		 *
 		 * NAME
@@ -395,66 +853,153 @@ namespace SpringCardPCSC
 		 *   .NET wrapper for SCardControl
 		 *
 		 **/
-		[DllImport
-		 ("winscard.dll", EntryPoint = "SCardControl", SetLastError =
-		  true)] public static extern uint Control(IntPtr hCard, uint ctlCode,
-		                                         [In] byte[]pbSendBuffer,
-		                                         uint cbSendLength,[In,
-		                                                            Out]
-		                                         byte[]pbRecvBuffer,
-		                                         uint RecvBuffsize,
-		                                         ref uint pcbRecvLength);
+		[DllImport(DllName_Win32, EntryPoint = "SCardControl", SetLastError = true)]
+		public static extern uint Control_Win32(IntPtr hCard, uint ctlCode,
+			[In] byte[] pbSendBuffer,
+			uint cbSendLength,
+			[In, Out] byte[] pbRecvBuffer,
+			uint RecvBuffsize,
+			[In, Out] ref uint pcbRecvLength);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardControl", SetLastError = true)]
+		public static extern uint Control_PcscLite(IntPtr hCard, uint ctlCode,
+			[In] byte[] pbSendBuffer,
+			uint cbSendLength,
+			[In, Out] byte[] pbRecvBuffer,
+			uint RecvBuffsize,
+			[In, Out] ref uint pcbRecvLength);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardControl132", SetLastError = true)]
+		public static extern uint Control_PcscMacOs(IntPtr hCard, uint ctlCode,
+			[In] byte[] pbSendBuffer, 
+			uint cbSendLength,
+			[In, Out] byte[] pbRecvBuffer,
+			uint RecvBuffsize,
+			[In, Out] ref uint pcbRecvLength);
+		public static uint Control(IntPtr hCard, uint ctlCode,
+			[In] byte[] pbSendBuffer,
+			uint cbSendLength,
+			[In, Out] byte[] pbRecvBuffer,
+			uint RecvBuffsize,
+			ref uint pcbRecvLength)
+		{
+			if (GetSystem() == System.Unix) {
+				return Control_PcscLite(hCard, IOCTL_PCSCLITE_ESCAPE, pbSendBuffer, cbSendLength, pbRecvBuffer, RecvBuffsize, ref pcbRecvLength);
+			} else if (GetSystem() == System.MacOs) {
+				return Control_PcscMacOs(hCard, IOCTL_PCSCLITE_ESCAPE, pbSendBuffer, cbSendLength, pbRecvBuffer, RecvBuffsize, ref pcbRecvLength);
+			} else {
+				return Control_Win32(hCard, ctlCode, pbSendBuffer, cbSendLength, pbRecvBuffer, RecvBuffsize, ref pcbRecvLength);
+			}
+		}
+		
+		/**f* SCARD/BeginTransaction
+		 *
+		 * NAME
+		 *   SCARD.BeginTransaction
+		 *
+		 * DESCRIPTION
+		 *   .NET wrapper for SCardBeginTransaction
+		 *
+		 **/
+		[DllImport(DllName_Win32, EntryPoint = "SCardBeginTransaction")]
+		public static extern uint BeginTransaction_Win32(IntPtr hCard);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardBeginTransaction")]
+		public static extern uint BeginTransaction_PcscLite(IntPtr hCard);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardBeginTransaction")]
+		public static extern uint BeginTransaction_PcscMacOs(IntPtr hCard);
+		public static uint BeginTransaction(IntPtr hCard)
+		{
+			if (GetSystem() == System.Unix) {
+				return BeginTransaction_PcscLite(hCard);
+			} else if (GetSystem() == System.MacOs) {
+				return BeginTransaction_PcscMacOs(hCard);
+			} else {
+				return BeginTransaction_Win32(hCard);
+			}		
+		}
+
+		/**f* SCARD/EndTransaction
+		 *
+		 * NAME
+		 *   SCARD.EndTransaction
+		 *
+		 * DESCRIPTION
+		 *   .NET wrapper for SCardEndTransaction
+		 *
+		 **/
+		[DllImport(DllName_Win32, EntryPoint = "SCardEndTransaction")]
+		public static extern uint EndTransaction_Win32(IntPtr hCard, uint Disposition);
+		[DllImport(DllName_PcscLite, EntryPoint = "SCardEndTransaction")]
+		public static extern uint EndTransaction_PcscLite(IntPtr hCard, uint Disposition);
+		[DllImport(DllName_PcscMacOs, EntryPoint = "SCardEndTransaction")]
+		public static extern uint EndTransaction_PcscMacOs(IntPtr hCard, uint Disposition);
+		public static uint EndTransaction(IntPtr hCard, uint Disposition)
+		{
+			if (GetSystem() == System.Unix) {
+				return EndTransaction_PcscLite(hCard, Disposition);
+			} else if (GetSystem() == System.MacOs) {
+				return EndTransaction_PcscMacOs(hCard, Disposition);
+			} else {
+				return EndTransaction_Win32(hCard, Disposition);
+			}		
+		}
 		#endregion
 
 		#region Static methods - easy access to the list of readers
 		public static string[] GetReaderList(IntPtr hContext, string Groups)
 		{
-			int i, j = 0;
+			int i;
 			string s = "";
 			uint rc;
 			uint readers_size = 0;
 			int readers_count = 0;
-
-			rc = SCARD.ListReaders(hContext, Groups, null, ref readers_size);
-			if (rc != SCARD.S_SUCCESS)
-				return null;
-
-			string readers_str = new string(' ', (int) readers_size);
 			
-			rc = SCARD.ListReaders(hContext, Groups, readers_str, ref readers_size);
+			if (GetSystem() != System.Win32) {
+				string dummy = null;
+				rc = SCARD.ListReaders(hContext, Groups, ref dummy, ref readers_size);
+			} else {
+				rc = SCARD.ListReaders(hContext, Groups, null, ref readers_size);
+			}
+			
 			if (rc != SCARD.S_SUCCESS)
 				return null;
+      
+			string readers_str = new string(' ', (int)readers_size);		
 
-			for (i = 0; i < readers_size; i++)
-			{
-				if (readers_str[i] == '\0')
-				{
+			if (GetSystem() != System.Win32) {
+				rc = SCARD.ListReaders(hContext, Groups, ref readers_str, ref readers_size);
+			} else {
+				rc = SCARD.ListReaders(hContext, Groups, readers_str, ref readers_size);
+			}
+      
+			if (rc != SCARD.S_SUCCESS)
+				return null;
+      
+			for (i = 0; i < readers_size; i++) {
+				if (readers_str[i] == '\0') {
 					if (i > 0)
 						readers_count++;
+					if ((i + 1) < readers_size)
 					if (readers_str[i + 1] == '\0')
 						break;
 				}
 			}
-			
+      
 			string[] readers = new string[readers_count];
-
-			if (readers_count > 0)
-			{
-				for (i = 0; i < readers_size; i++)
-				{
-					if (readers_str[i] == '\0')
-					{
+      
+			if (readers_count > 0) {
+				s = "";
+				int j = 0;
+				for (i = 0; i < readers_size; i++) {
+					if (readers_str[i] == '\0') {
 						readers[j++] = s;
+						s = "";						
 						if (readers_str[i + 1] == '\0')
 							break;
-						s = "";
-					} else
-					{
-						s = s + readers_str[i];
+					} else {
+						s = s + (char)readers_str[i];
 					}
 				}
 			}
-
+			
 			return readers;
 		}
 		
@@ -467,7 +1012,7 @@ namespace SpringCardPCSC
 		{
 			IntPtr hContext = IntPtr.Zero;
 			uint rc;
-
+						
 			rc = SCARD.EstablishContext(Scope, IntPtr.Zero, IntPtr.Zero, ref hContext);
 			if (rc != SCARD.S_SUCCESS)
 				return null;
@@ -497,10 +1042,8 @@ namespace SpringCardPCSC
 		 *   string[] SCARD.Readers
 		 *
 		 **/
-		public static string[] Readers
-		{
-			get
-			{
+		public static string[] Readers {
+			get {
 				return GetReaderList();
 			}
 		}
@@ -523,19 +1066,23 @@ namespace SpringCardPCSC
 		public static string ErrorToString(uint code)
 		{
 			string r = "";
-			try
-			{
-				r = (new Win32Exception((int) code)).Message;
-			} catch (Exception)
-			{
-				
+      
+			try {     
+				if ((code >= SCARD.F_INTERNAL_ERROR) && (code <= SCARD.W_CARD_NOT_AUTHENTICATED)) {
+					if (GetSystem() == System.Win32)
+						r = (new Win32Exception((int)code)).Message;
+        
+				} else {
+					r = (new Win32Exception((int)code)).Message;
+				}
+			} catch {
+        
 			}
-			
+
 			if (!r.Equals(""))
 				return r;
 			
-			switch (code)
-			{
+			switch (code) {
 				case SCARD.S_SUCCESS:
 					return "SCARD_S_SUCCESS";
 				case SCARD.F_INTERNAL_ERROR:
@@ -634,7 +1181,7 @@ namespace SpringCardPCSC
 					return "SCARD_E_COMM_DATA_LOST";
 				case SCARD.E_NO_KEY_CONTAINER:
 					return "SCARD_E_NO_KEY_CONTAINER";
-					//case SCARD.E_SERVER_TOO_BUSY : return "SCARD_E_SERVER_TOO_BUSY";
+			//case SCARD.E_SERVER_TOO_BUSY : return "SCARD_E_SERVER_TOO_BUSY";
 				case SCARD.W_UNSUPPORTED_CARD:
 					return "SCARD_W_UNSUPPORTED_CARD";
 				case SCARD.W_UNRESPONSIVE_CARD:
@@ -777,26 +1324,24 @@ namespace SpringCardPCSC
 		 **/
 		public static string CardStatusWordsToString(ushort SW)
 		{
-			byte SW1 = (byte) (SW / 0x0100);
-			byte SW2 = (byte) (SW % 0x0100);
+			byte SW1 = (byte)(SW / 0x0100);
+			byte SW2 = (byte)(SW % 0x0100);
 
 			return CardStatusWordsToString(SW1, SW2);
 		}
 
 		public static string CardStatusWordsToString(byte SW1, byte SW2)
 		{
-			switch (SW1)
-			{
+			switch (SW1) {
 				case 0x60:
 					return "null";
 
 				case 0x61:
 					return "Still " + SW2.ToString() +
-						" bytes available. Use GET RESPONSE to access this data";
+					" bytes available. Use GET RESPONSE to access this data";
 
 				case 0x62:
-					switch (SW2)
-					{
+					switch (SW2) {
 						case 0x81:
 							return "Warning : returned data may be corrupted";
 						case 0x82:
@@ -821,8 +1366,7 @@ namespace SpringCardPCSC
 					return "Error : state unchanged";
 
 				case 0x65:
-					switch (SW2)
-					{
+					switch (SW2) {
 						case 0x01:
 							return "Memory failure, problem in writing the EEPROM";
 						case 0x81:
@@ -838,8 +1382,7 @@ namespace SpringCardPCSC
 					return "Check error - incorrect byte length";
 
 				case 0x68:
-					switch (SW2)
-					{
+					switch (SW2) {
 						case 0x81:
 							return "Check error - logical channel not supported";
 						case 0x82:
@@ -849,8 +1392,7 @@ namespace SpringCardPCSC
 					}
 
 				case 0x69:
-					switch (SW2)
-					{
+					switch (SW2) {
 						case 0x81:
 							return "Check error : command incompatible with file structure";
 						case 0x82:
@@ -873,8 +1415,7 @@ namespace SpringCardPCSC
 					}
 
 				case 0x6A:
-					switch (SW2)
-					{
+					switch (SW2) {
 						case 0x00:
 							return "Check error : P1 or P2 incorrect";
 						case 0x80:
@@ -913,120 +1454,118 @@ namespace SpringCardPCSC
 
 				case 0x6F:
 					int rc = 0 - SW2;
-					switch(rc)
-					{
-							/* Error codes taken from SpringProx API */
-						case 0 :
+					switch (rc) {
+					/* Error codes taken from SpringProx API */
+						case 0:
 							return "Undiagnosticed error";
-						case -1 :
+						case -1:
 							return "No answer (no card / card is mute)";
-						case -2 :
+						case -2:
 							return "Invalid CRC in card's response";
-						case -3 :
+						case -3:
 							return "No frame received (NFC mode)";
-						case -4 :
+						case -4:
 							return "Card: Authentication failed or access denied";
-						case -5 :
+						case -5:
 							return "Invalid parity bit(s) in card's response";
-						case -6 :
+						case -6:
 							return "NACK or status indicating error";
-						case -7 :
+						case -7:
 							return "Too many anticollision loops";
-						case -8 :
+						case -8:
 							return "Wrong LRC in card's serial number";
-						case -9 :
+						case -9:
 							return "Card or block locked";
-						case -10 :
+						case -10:
 							return "Card: Authentication must be performed first";
-						case -11 :
+						case -11:
 							return "Wrong number of bits in card's answer";
-						case -12 :
+						case -12:
 							return "Wrong number of bytes in card's answer";
-						case -13 :
+						case -13:
 							return "Card: Counter is invalid";
-						case -14 :
+						case -14:
 							return "Card: Transaction error";
-						case -15 :
+						case -15:
 							return "Card: Write failed";
-						case -16 :
+						case -16:
 							return "Card: Counter increase failed";
-						case -17 :
+						case -17:
 							return "Card: Counter decrease failed";
-						case -18 :
+						case -18:
 							return "Card: Read failed";
-						case -19 :
+						case -19:
 							return "RC: FIFO overflow";
-						case -20 :
+						case -20:
 							return "Polling mode pending";
-						case -21 :
+						case -21:
 							return "Invalid framing in card's response";
-						case -22 :
+						case -22:
 							return "Card: Access error (bad address or denied)";
-						case -23 :
+						case -23:
 							return "RC: Unknown command";
-						case -24 :
+						case -24:
 							return "A collision has occurred";
-						case -25 :
+						case -25:
 							return "Command execution failed";
-						case -26 :
+						case -26:
 							return "Hardware error";
-						case -27 :
+						case -27:
 							return "RC: timeout";
-						case -28 :
+						case -28:
 							return "More than one card found, but at least one does not support anticollision";
-						case -29 :
+						case -29:
 							return "An external RF field has been detected";
-						case -30 :
+						case -30:
 							return "Polling terminated (timeout or break)";
-						case -31 :
+						case -31:
 							return "Bogus status in card's response";
-						case -32 :
+						case -32:
 							return "Card: Vendor specific error";
-						case -33 :
+						case -33:
 							return "Card: Command not supported";
-						case -34 :
+						case -34:
 							return "Card: Format of command invalid";
-						case -35 :
+						case -35:
 							return "Card: Option(s) of command invalid";
-						case -36 :
+						case -36:
 							return "Card: other error";
-						case -59 :
+						case -59:
 							return "Command not available in this mode";
-						case -60 :
+						case -60:
 							return "Wrong parameter for the command";
-						case -71 :
+						case -71:
 							return "No active card with this CID";
-						case -75 :
+						case -75:
 							return "Length error in card's ATS";
-						case -76 :
+						case -76:
 							return "Error in card's response to ATTRIB";
-						case -77 :
+						case -77:
 							return "Format error in card's ATS";
-						case -78 :
+						case -78:
 							return "Protocol error in card's response";
-						case -87 :
+						case -87:
 							return "Format error in card's PPS response";
-						case -88 :
+						case -88:
 							return "Other error in card's PPS response";
-						case -93 :
+						case -93:
 							return "A card is already active with this CID";
-						case -100 :
+						case -100:
 							return "Command not supported by the coupler";
-						case -111 :
+						case -111:
 							return "Internal error in the coupler";
-						case -112 :
+						case -112:
 							return "Internal buffer overflow";
-						case -125 :
+						case -125:
 							return "Wrong data length for the command";
-						case -128 :
+						case -128:
 							return "More time needed to process the command";
-							default :
-								return "Undiagnosticed error " + rc;
+						default :
+							return "Undiagnosticed error " + rc;
 					}
 
 				case 0x90:
-					switch (SW2)
-					{
+					switch (SW2) {
 						case 0x00:
 							return "Success";
 						case 0x01:
@@ -1044,8 +1583,7 @@ namespace SpringCardPCSC
 					}
 
 				case 0x92:
-					switch (SW2)
-					{
+					switch (SW2) {
 						case 0x00:
 							return "Reference executed ok";
 						case 0x02:
@@ -1058,8 +1596,7 @@ namespace SpringCardPCSC
 					return "No EF selected";
 
 				case 0x98:
-					switch (SW2)
-					{
+					switch (SW2) {
 						case 0x02:
 							return "Invalid PIN";
 						case 0x04:
@@ -1082,2669 +1619,5 @@ namespace SpringCardPCSC
 		}
 	}
 	#endregion
-
-	#region SCardReaderList
-	
-	/**c* SpringCardPCSC/SCardReaderList
-	 *
-	 * NAME
-	 *   SCardReaderList
-	 *
-	 * DESCRIPTION
-	 *   The SCardReaderList object is used to monitor a set of PC/SC readers (i.e. wait for card events)
-	 *
-	 * SYNOPSIS
-	 *   SCardReaderList( string[] reader_names );
-	 *
-	 **/
-
-	public class SCardReaderList
-	{
-		uint _last_error;
-		uint _scope = SCARD.SCOPE_SYSTEM;
-		string _groups = null;
-		string[] _reader_names;
-		bool _auto_update_list;
-		StatusChangeCallback _status_change_callback = null;
-		Thread _status_change_thread = null;
-		volatile bool _status_change_running = false;
-
-		public SCardReaderList(uint Scope, string Groups)
-		{
-			_scope = Scope;
-			_groups = Groups;
-			_reader_names = null;
-			_auto_update_list = true;
-		}
-
-		public SCardReaderList()
-		{
-			_reader_names = null;
-			_auto_update_list = true;
-		}
-
-		public SCardReaderList(string[] reader_names)
-		{
-			_reader_names = reader_names;
-			_auto_update_list = false;
-		}
-
-		~SCardReaderList()
-		{
-			StopMonitor();
-		}
-
-		/**t* SCardReaderList/StatusChangeCallback
-		 *
-		 * NAME
-		 *   SCardReaderList.StatusChangeCallback
-		 *
-		 * SYNOPSIS
-		 *   delegate void StatusChangeCallback(string ReaderName, uint ReaderState, CardBuffer CardAtr);
-		 *
-		 * DESCRIPTION
-		 *   Typedef for the callback that will be called by the background thread launched
-		 *   by SCardReaderList.StartMonitor(), everytime the status of one of the readers is changed.
-		 *
-		 * NOTES
-		 *   The callback is invoked in the context of a background thread. This implies that
-		 *   it is not allowed to access the GUI's components directly.
-		 *
-		 **/
-		public delegate void StatusChangeCallback(string ReaderName,
-		                                          uint ReaderState,
-		                                          CardBuffer CardAtr);
-
-		/**m* SCardReaderList/StartMonitor
-		 *
-		 * NAME
-		 *   SCardReaderList.StartMonitor()
-		 *
-		 * SYNOPSIS
-		 *   SCardReaderList.StartMonitor(SCardReaderList.StatusChangeCallback callback);
-		 *
-		 * DESCRIPTION
-		 *   Create a background thread to monitor the reader associated to the object.
-		 *   Everytime the status of the reader is changed, the callback is invoked.
-		 *
-		 * SEE ALSO
-		 *   SCardReaderList.StatusChangeCallback
-		 *   SCardReaderList.StopMonitor()
-		 *
-		 **/
-		public void StartMonitor(StatusChangeCallback callback)
-		{
-			StopMonitor();
-
-			if (callback != null)
-			{
-				_status_change_callback = callback;
-				_status_change_thread = new Thread(StatusChangeMonitor);
-				_status_change_running = true;
-				_status_change_thread.Start();
-			}
-		}
-
-		/**m* SCardReaderList/StopMonitor
-		 *
-		 * NAME
-		 *   SCardReaderList.StopMonitor()
-		 *
-		 * DESCRIPTION
-		 *   Stop the background thread previously launched by SCardReaderList.StartMonitor().
-		 *
-		 **/
-		public void StopMonitor()
-		{
-			_status_change_callback = null;
-			_status_change_running = false;
-
-			if (_status_change_thread != null)
-			{
-				_status_change_thread.Abort();
-				_status_change_thread.Join();
-				_status_change_thread = null;
-			}
-		}
-
-		private void StatusChangeMonitor()
-		{
-			IntPtr hContext = IntPtr.Zero;
-			bool bContextValid = false;
-			
-			_last_error = SCARD.EstablishContext(_scope, IntPtr.Zero, IntPtr.Zero, ref hContext);
-			if (_last_error != SCARD.S_SUCCESS)
-			{
-				_status_change_callback(null, 0, null);
-				return;
-			}
-			bContextValid = true;
-			
-			uint global_notification_state = SCARD.STATE_UNAWARE;
-			
-			while (_status_change_running)
-			{
-				
-				if (!bContextValid)
-				{
-					_last_error = SCARD.EstablishContext(_scope, IntPtr.Zero, IntPtr.Zero, ref hContext);
-					if (_last_error != SCARD.S_SUCCESS)
-					{
-						_status_change_callback(null, 0, null);
-						return;
-					}
-					bContextValid = true;
-				}
-				
-				/* Construct the list of readers we'll have to monitor */
-				/* --------------------------------------------------- */
-				bool global_notification_fired = false;
-				
-				SCARD.READERSTATE[] states;
-				
-				if (_auto_update_list)
-				{
-					if (_reader_names != null)
-						states = new SCARD.READERSTATE[_reader_names.Length + 1];
-					else
-						states = new SCARD.READERSTATE[1];
-				} else
-				{
-					if (_reader_names == null)
-					{
-						SCARD.ReleaseContext(hContext);
-						_status_change_callback(null, 0, null);
-						return;
-					}
-					states = new SCARD.READERSTATE[_reader_names.Length];
-				}
-				
-				for (int i=0; i<states.Length; i++)
-				{
-					states[i] = new SCARD.READERSTATE();
-					if (_auto_update_list && (i == 0))
-					{
-						/* Magic string to be notified of reader arrival/removal */
-						states[i].szReader = "\\\\?PNP?\\NOTIFICATION";
-						states[i].dwCurrentState = global_notification_state;
-					} else
-					{
-						/* Reader name */
-						states[i].szReader = _reader_names[i-1];
-						states[i].dwCurrentState = SCARD.STATE_UNAWARE;
-					}
-					states[i].dwEventState = 0;
-					states[i].cbAtr = 0;
-					states[i].rgbAtr = null;
-					states[i].pvUserData = IntPtr.Zero;
-				}
-				
-				/* Now wait for an event */
-				/* --------------------- */
-				
-				while (_status_change_running && !global_notification_fired)
-				{
-					uint rc = SCARD.GetStatusChange(hContext, 250, states, (uint) states.Length);
-					
-					if ((rc == SCARD.E_SERVICE_STOPPED) || (rc == SCARD.E_NO_SERVICE))
-					{
-						SCARD.ReleaseContext(hContext);
-						bContextValid = false;
-						continue;
-					}
-					
-					if (!_status_change_running)
-						break;
-					
-					if (rc == SCARD.E_TIMEOUT)
-						continue;
-					
-					if (rc != SCARD.S_SUCCESS)
-					{
-						_last_error = rc;
-						/* Broadcast a message saying we have a problem! */
-						for (int i=0; i<states.Length; i++)
-							states[i].dwEventState = 0|SCARD.STATE_CHANGED;
-					}
-					
-					for (int i=0; i<states.Length; i++)
-					{
-						if ((states[i].dwEventState & SCARD.STATE_CHANGED) != 0)
-						{
-							/* This reader has fired an event */
-							/* ------------------------------ */
-
-							if (_auto_update_list && (i == 0))
-							{
-								/* Not a reader but \\\\?PNP?\\NOTIFICATION */
-								/* ---------------------------------------- */
-								
-								global_notification_fired = true;
-								global_notification_state = states[0].dwEventState;
-								
-								/* Refresh the list of readers */
-								_reader_names = SCARD.GetReaderList(hContext, _groups);
-								
-								/* Notify the application that the list of readers has changed */
-								_status_change_callback(null, states[0].dwEventState & ~SCARD.STATE_CHANGED, null);
-
-							} else
-							{
-								/* This is a reader */
-								/* ---------------- */
-								
-								states[i].dwCurrentState = states[i].dwEventState;
-								if ((states[i].dwCurrentState & SCARD.STATE_IGNORE) != 0)
-									states[i].dwCurrentState = SCARD.STATE_UNAVAILABLE;
-								
-								CardBuffer card_atr = null;
-								
-								/* Is there a card involved ? */
-								if ((states[i].dwEventState & SCARD.STATE_PRESENT) != 0)
-									card_atr = new CardBuffer(states[i].rgbAtr, (int) states[i].cbAtr);
-								
-								_status_change_callback(states[i].szReader, states[i].dwEventState & ~SCARD.STATE_CHANGED, card_atr);
-							}
-						}
-					}
-				}
-			}
-
-			SCARD.ReleaseContext(hContext);
-		}
-		
-		/**f* SCardReaderList/Readers
-		 *
-		 * NAME
-		 *   SCardReaderList.Readers
-		 *
-		 * DESCRIPTION
-		 *   Provides the list of the monitored PC/SC readers
-		 *
-		 * SYNOPSIS
-		 *   string[] SCardReaderList.Readers
-		 *
-		 **/
-		public string[] Readers
-		{
-			get
-			{
-				return _reader_names;
-			}
-		}
-
-		/**v* SCardReaderList/LastError
-		 *
-		 * NAME
-		 *   uint SCardReaderList.LastError
-		 * 
-		 * OUTPUT
-		 *   Returns the last error encountered by the object when working with SCARD functions.
-		 *
-		 * SEE ALSO
-		 *   SCardReaderList.LastErrorAsString
-		 *
-		 **/
-		public uint LastError
-		{
-			get
-			{
-				return _last_error;
-			}
-		}
-
-		/**v* SCardReaderList/LastErrorAsString
-		 *
-		 * NAME
-		 *   string SCardReaderList.LastErrorAsString
-		 * 
-		 * OUTPUT
-		 *   Returns the last error encountered by the object when working with SCARD functions.
-		 *
-		 * SEE ALSO
-		 *   SCardReaderList.LastError
-		 *
-		 **/
-		public string LastErrorAsString
-		{
-			get
-			{
-				return SCARD.ErrorToString(_last_error);
-			}
-		}
-
-	}
-	#endregion
-	
-	#region SCardReader class
-
-	/**c* SpringCardPCSC/SCardReader
-	 *
-	 * NAME
-	 *   SCardReader
-	 *
-	 * DESCRIPTION
-	 *   The SCardReader object is used to monitor a PC/SC reader (i.e. wait for card events)
-	 *
-	 * SYNOPSIS
-	 *   SCardReader( string reader_name );
-	 *
-	 **/
-
-	public class SCardReader
-	{
-		uint _last_error;
-		uint _scope = SCARD.SCOPE_SYSTEM;
-		string _reader_name;
-		uint _reader_state = SCARD.STATE_UNAWARE;
-		CardBuffer _card_atr = null;
-		StatusChangeCallback _status_change_callback = null;
-		Thread _status_change_thread = null;
-		volatile bool _status_change_running = false;
-
-		public SCardReader(uint Scope, string ReaderName)
-		{
-			_scope = Scope;
-			_reader_name = ReaderName;
-		}
-
-		public SCardReader(string ReaderName)
-		{
-			_reader_name = ReaderName;
-		}
-
-		~SCardReader()
-		{
-			StopMonitor();
-		}
-		
-		public uint Scope
-		{
-			get
-			{
-				return _scope;
-			}
-		}
-
-		/**v* SCardReader/Name
-		 *
-		 * NAME
-		 *   SCardReader.Name
-		 *
-		 * SYNOPSIS
-		 *   string Name
-		 *
-		 * OUTPUT
-		 *   Return the name of the reader specified when instanciating the object.
-		 *
-		 **/
-
-		public string Name
-		{
-			get
-			{
-				return _reader_name;
-			}
-		}
-
-		/**t* SCardReader/StatusChangeCallback
-		 *
-		 * NAME
-		 *   SCardReader.StatusChangeCallback
-		 *
-		 * SYNOPSIS
-		 *   delegate void StatusChangeCallback(uint ReaderState, CardBuffer CardAtr);
-		 *
-		 * DESCRIPTION
-		 *   Typedef for the callback that will be called by the background thread launched
-		 *   by SCardReader.StartMonitor(), everytime the status of the reader is changed.
-		 *
-		 * NOTES
-		 *   The callback is invoked in the context of a background thread. This implies that
-		 *   it is not allowed to access the GUI's components directly.
-		 *
-		 **/
-		public delegate void StatusChangeCallback(uint ReaderState,
-		                                          CardBuffer CardAtr);
-
-		/**m* SCardReader/StartMonitor
-		 *
-		 * NAME
-		 *   SCardReader.StartMonitor()
-		 *
-		 * SYNOPSIS
-		 *   SCardReader.StartMonitor(SCardReader.StatusChangeCallback callback);
-		 *
-		 * DESCRIPTION
-		 *   Create a background thread to monitor the reader associated to the object.
-		 *   Everytime the status of the reader is changed, the callback is invoked.
-		 *
-		 * SEE ALSO
-		 *   SCardReader.StatusChangeCallback
-		 *   SCardReader.StopMonitor()
-		 *
-		 **/
-
-		public void StartMonitor(StatusChangeCallback callback)
-		{
-			StopMonitor();
-
-			if (callback != null)
-			{
-				_status_change_callback = callback;
-				_status_change_thread = new Thread(StatusChangeMonitor);
-				_status_change_running = true;
-				_status_change_thread.Start();
-			}
-		}
-
-		/**m* SCardReader/StopMonitor
-		 *
-		 * NAME
-		 *   SCardReader.StopMonitor()
-		 *
-		 * DESCRIPTION
-		 *   Stop the background thread previously launched by SCardReader.StartMonitor().
-		 *
-		 **/
-
-		public void StopMonitor()
-		{
-			_status_change_callback = null;
-			_status_change_running = false;
-
-			if (_status_change_thread != null)
-			{
-				_status_change_thread.Abort();
-				_status_change_thread.Join();
-				_status_change_thread = null;
-			}
-		}
-
-		private void StatusChangeMonitor()
-		{
-			uint rc;
-
-			IntPtr hContext = IntPtr.Zero;
-
-			_reader_state = SCARD.STATE_UNAWARE;
-			_card_atr = null;
-
-			rc =
-				SCARD.EstablishContext(_scope, IntPtr.Zero, IntPtr.Zero, ref hContext);
-			if (rc != SCARD.S_SUCCESS)
-				return;
-
-			SCARD.READERSTATE[]states = new SCARD.READERSTATE[1];
-
-			states[0] = new SCARD.READERSTATE();
-			states[0].szReader = _reader_name;
-			states[0].pvUserData = IntPtr.Zero;
-			states[0].dwCurrentState = 0;
-			states[0].dwEventState = 0;
-			states[0].cbAtr = 0;
-			states[0].rgbAtr = null;
-
-			while (_status_change_running)
-			{
-				rc = SCARD.GetStatusChange(hContext, 250, states, 1);
-
-				if (!_status_change_running)
-					break;
-
-				if (rc == SCARD.E_TIMEOUT)
-					continue;
-
-				if (rc != SCARD.S_SUCCESS)
-				{
-					_last_error = rc;
-
-					SCARD.ReleaseContext(hContext);
-					if (_status_change_callback != null)
-						_status_change_callback(0, null);
-					break;
-				}
-
-				if ((states[0].dwEventState & SCARD.STATE_CHANGED) != 0)
-				{
-					states[0].dwCurrentState = states[0].dwEventState;
-					
-					if (_status_change_callback != null)
-					{
-						CardBuffer card_atr = null;
-
-						if ((states[0].dwEventState & SCARD.STATE_PRESENT) != 0)
-							card_atr =
-								new CardBuffer(states[0].rgbAtr, (int) states[0].cbAtr);
-
-						_status_change_callback(states[0].dwEventState & ~SCARD.
-						                        STATE_CHANGED, card_atr);
-					}
-				}
-			}
-
-			SCARD.ReleaseContext(hContext);
-		}
-
-		private void UpdateState()
-		{
-			uint rc;
-
-			IntPtr hContext = IntPtr.Zero;
-
-			_reader_state = SCARD.STATE_UNAWARE;
-			_card_atr = null;
-
-			rc =
-				SCARD.EstablishContext(_scope, IntPtr.Zero, IntPtr.Zero, ref hContext);
-			if (rc != SCARD.S_SUCCESS)
-			{
-				_last_error = rc;
-				return;
-			}
-
-			SCARD.READERSTATE[]states = new SCARD.READERSTATE[1];
-
-			states[0] = new SCARD.READERSTATE();
-			states[0].szReader = _reader_name;
-			states[0].pvUserData = IntPtr.Zero;
-			states[0].dwCurrentState = 0;
-			states[0].dwEventState = 0;
-			states[0].cbAtr = 0;
-			states[0].rgbAtr = null;
-
-			rc = SCARD.GetStatusChange(hContext, 0, states, 1);
-			if (rc != SCARD.S_SUCCESS)
-			{
-				SCARD.ReleaseContext(hContext);
-				return;
-			}
-
-			SCARD.ReleaseContext(hContext);
-
-			_reader_state = states[0].dwEventState;
-
-			if ((_reader_state & SCARD.STATE_PRESENT) != 0)
-			{
-				_card_atr = new CardBuffer(states[0].rgbAtr, (int) states[0].cbAtr);
-			}
-		}
-
-		/**v* SCardReader/Status
-		 *
-		 * NAME
-		 *   SCardReader.Status
-		 * 
-		 * SYNOPSIS
-		 *   uint Status
-		 *
-		 * OUTPUT
-		 *   Returns the current status of the reader.
-		 *
-		 * SEE ALSO
-		 *   SCardReader.CardPresent
-		 *   SCardReader.StatusAsString
-		 *
-		 **/
-
-		public uint Status
-		{
-			get
-			{
-				UpdateState();
-				return _reader_state;
-			}
-		}
-
-		/**v* SCardReader/StatusAsString
-		 *
-		 * NAME
-		 *   SCardReader.StatusAsString
-		 * 
-		 * SYNOPSIS
-		 *   string StatusAsString
-		 *
-		 * OUTPUT
-		 *   Returns the current status of the reader, using SCARD.ReaderStatusToString as formatter.
-		 *
-		 * SEE ALSO
-		 *   SCardReader.Status
-		 *
-		 **/
-
-		public string StatusAsString
-		{
-			get
-			{
-				UpdateState();
-				return SCARD.ReaderStatusToString(_reader_state);
-			}
-		}
-
-		/**v* SCardReader/CardPresent
-		 *
-		 * NAME
-		 *   SCardReader.CardPresent
-		 * 
-		 * SYNOPSIS
-		 *   bool CardPresent
-		 *
-		 * OUTPUT
-		 *   Returns true if a card is present in the reader.
-		 *   Returns false if there's no smartcard in the reader.
-		 *
-		 * SEE ALSO
-		 *   SCardReader.CardAtr
-		 *   SCardReader.CardAvailable
-		 *   SCardReader.Status
-		 *
-		 **/
-
-		public bool CardPresent
-		{
-			get
-			{
-				UpdateState();
-				if ((_reader_state & SCARD.STATE_PRESENT) != 0)
-					return true;
-				return false;
-			}
-		}
-
-		/**v* SCardReader/CardAvailable
-		 *
-		 * NAME
-		 *   SCardReader.CardAvailable
-		 *
-		 * SYNOPSIS
-		 *   bool CardAvailable
-		 *
-		 * OUTPUT
-		 *   Returns true if a card is available in the reader.
-		 *   Returns false if there's no smartcard in the reader, or if it is already used by another process/thread.
-		 * 
-		 * SEE ALSO
-		 *   SCardReader.CardAtr
-		 *   SCardReader.CardPresent
-		 *   SCardReader.Status
-		 *
-		 **/
-
-		public bool CardAvailable
-		{
-			get
-			{
-				UpdateState();
-				if (((_reader_state & SCARD.STATE_PRESENT) != 0)
-				    && ((_reader_state & SCARD.STATE_MUTE) == 0)
-				    && ((_reader_state & SCARD.STATE_INUSE) == 0))
-					return true;
-				return false;
-			}
-		}
-
-		/**v* SCardReader/CardAtr
-		 *
-		 * NAME
-		 *   SCardReader.CardAtr
-		 *
-		 * SYNOPSIS
-		 *   CardBuffer CardAtr
-		 *
-		 * OUTPUT
-		 *   If a smartcard is present in the reader (SCardReader.CardPresent == true), returns the ATR of the card.
-		 *   Returns null overwise.
-		 * 
-		 * SEE ALSO
-		 *   SCardReader.CardPresent
-		 *   SCardReader.Status
-		 *
-		 **/
-
-		public CardBuffer CardAtr
-		{
-			get
-			{
-				UpdateState();
-				return _card_atr;
-			}
-		}
-
-		/**v* SCardReader/LastError
-		 *
-		 * NAME
-		 *   uint SCardReader.LastError
-		 * 
-		 * OUTPUT
-		 *   Returns the last error encountered by the object when working with SCARD functions.
-		 *
-		 * SEE ALSO
-		 *   SCardReader.LastErrorAsString
-		 *
-		 **/
-		public uint LastError
-		{
-			get
-			{
-				return _last_error;
-			}
-		}
-
-		/**v* SCardReader/LastErrorAsString
-		 *
-		 * NAME
-		 *   string SCardReader.LastErrorAsString
-		 * 
-		 * OUTPUT
-		 *   Returns the last error encountered by the object when working with SCARD functions.
-		 *
-		 * SEE ALSO
-		 *   SCardReader.LastError
-		 *
-		 **/
-		public string LastErrorAsString
-		{
-			get
-			{
-				return SCARD.ErrorToString(_last_error);
-			}
-		}
-
-	}
-	#endregion
-
-	#region SCardChannel class
-
-	/**c* SpringCardPCSC/SCardChannel
-	 *
-	 * NAME
-	 *   SCardChannel
-	 * 
-	 * DESCRIPTION
-	 *   The SCardChannel object provides the actual connection to the smartcard through the PC/SC reader
-	 *
-	 * SYNOPSIS
-	 *   SCardChannel( string reader_name );
-	 *   SCardChannel( SCardReader reader );
-	 *
-	 **/
-
-	public class SCardChannel
-	{
-		private string _reader_name;
-		private uint _reader_state;
-		private uint _active_protocol;
-		private uint _want_protocols = SCARD.PROTOCOL_T0 | SCARD.PROTOCOL_T1;
-		private uint _share_mode = SCARD.SHARE_SHARED;
-		private uint _last_error;
-		private CAPDU _capdu;
-		private RAPDU _rapdu;
-		private CardBuffer _cctrl;
-		private CardBuffer _rctrl;
-		private CardBuffer _card_atr;
-		private IntPtr _hContext = IntPtr.Zero;
-		private IntPtr _hCard = IntPtr.Zero;
-		TransmitDoneCallback _transmit_done_callback = null;
-		Thread _transmit_thread = null;
-
-		public delegate void TransmitDoneCallback(RAPDU rapdu);
-		
-		private void Instanciate(uint Scope, string ReaderName)
-		{
-			uint rc;
-
-			rc = SCARD.EstablishContext(Scope, IntPtr.Zero, IntPtr.Zero, ref _hContext);
-			if (rc != SCARD.S_SUCCESS)
-			{
-				_hContext = IntPtr.Zero;
-				_last_error = rc;
-			}
-
-			_reader_name = ReaderName;
-		}
-
-		public SCardChannel(uint Scope, string ReaderName)
-		{
-			Instanciate(Scope, ReaderName);
-		}
-
-		public SCardChannel(string ReaderName)
-		{
-			Instanciate(SCARD.SCOPE_SYSTEM, ReaderName);
-		}
-		
-		public SCardChannel(SCardReader Reader)
-		{
-			Instanciate(Reader.Scope, Reader.Name);
-		}
-
-		~SCardChannel()
-		{
-			if (Connected)
-				DisconnectReset();
-
-			if (_hContext != IntPtr.Zero)
-				SCARD.ReleaseContext(_hContext);
-		}
-
-		public IntPtr hContext
-		{
-			get
-			{
-				return _hContext;
-			}
-		}
-
-		public IntPtr hCard
-		{
-			get
-			{
-				return _hCard;
-			}
-		}
-		
-		public string ReaderName
-		{
-			get
-			{
-				return _reader_name;
-			}
-		}
-
-		private void UpdateState()
-		{
-			uint rc;
-
-			_reader_state = SCARD.STATE_UNAWARE;
-			_card_atr = null;
-
-			if (Connected)
-			{
-				byte[]atr_buffer = new byte[36];
-				uint atr_length = 36;
-
-				uint dummy = 0;
-
-				rc =
-					SCARD.Status(_hCard, IntPtr.Zero, ref dummy,
-					             ref _reader_state, ref _active_protocol, atr_buffer,
-					             ref atr_length);
-				if (rc != SCARD.S_SUCCESS)
-				{
-					_last_error = rc;
-					return;
-				}
-
-				_card_atr = new CardBuffer(atr_buffer, (int) atr_length);
-
-
-			} else
-			{
-				SCARD.READERSTATE[]states = new SCARD.READERSTATE[1];
-
-				states[0] = new SCARD.READERSTATE();
-				states[0].szReader = _reader_name;
-				states[0].pvUserData = IntPtr.Zero;
-				states[0].dwCurrentState = 0;
-				states[0].dwEventState = 0;
-				states[0].cbAtr = 0;
-				states[0].rgbAtr = null;
-
-				rc = SCARD.GetStatusChange(_hContext, 0, states, 1);
-				if (rc != SCARD.S_SUCCESS)
-				{
-					_last_error = rc;
-					return;
-				}
-
-				_reader_state = states[0].dwEventState;
-
-				if ((_reader_state & SCARD.STATE_PRESENT) != 0)
-				{
-					_card_atr = new CardBuffer(states[0].rgbAtr, (int) states[0].cbAtr);
-				}
-			}
-		}
-
-		/**v* SCardChannel/CardPresent
-		 *
-		 * NAME
-		 *   SCardChannel.CardPresent
-		 *
-		 * SYNOPSIS
-		 *   bool CardPresent
-		 *
-		 * OUTPUT
-		 *   Returns true if a card is present in the reader associated to the SCardChannel object.
-		 *   Returns false if there's no smartcard in the reader.
-		 * 
-		 * SEE ALSO
-		 *   SCardChannel.CardAvailable
-		 *   SCardChannel.CardAtr
-		 *
-		 **/
-
-		public bool CardPresent
-		{
-			get
-			{
-				UpdateState();
-
-				if ((_reader_state & SCARD.STATE_PRESENT) != 0)
-					return true;
-
-				return false;
-			}
-		}
-
-		/**v* SCardChannel/CardAvailable
-		 *
-		 * NAME
-		 *   SCardChannel.CardAvailable
-		 *
-		 * SYNOPSIS
-		 *   bool CardAvailable
-		 *
-		 * OUTPUT
-		 *   Returns true if a card is available in the reader associated to the SCardChannel object.
-		 *   Returns false if there's no smartcard in the reader, or if it is already used by another process/thread.
-		 * 
-		 * SEE ALSO
-		 *   SCardChannel.CardPresent
-		 *   SCardChannel.CardAtr
-		 *
-		 **/
-
-		public bool CardAvailable
-		{
-			get
-			{
-				UpdateState();
-
-				if (((_reader_state & SCARD.STATE_PRESENT) != 0)
-				    && ((_reader_state & SCARD.STATE_MUTE) == 0)
-				    && ((_reader_state & SCARD.STATE_INUSE) == 0))
-					return true;
-
-				return false;
-			}
-		}
-
-		/**v* SCardChannel/CardAtr
-		 *
-		 * NAME
-		 *   SCardChannel.CardAtr
-		 *
-		 * SYNOPSIS
-		 *   CardBuffer CardAtr
-		 *
-		 * OUTPUT
-		 *   Returns the ATR of the smartcard in the reader, or null if no smartcard is present.
-		 * 
-		 * SEE ALSO
-		 *   SCardChannel.CardPresent
-		 *
-		 **/
-
-		public CardBuffer CardAtr
-		{
-			get
-			{
-				UpdateState();
-				return _card_atr;
-			}
-		}
-
-		/**v* SCardChannel/Connected
-		 *
-		 * NAME
-		 *   SCardChannel.Connected
-		 *
-		 * SYNOPSIS
-		 *   bool Connected
-		 *
-		 * OUTPUT
-		 *   Returns true if the SCardChannel object is actually connected to a smartcard.
-		 *   Returns false if not.
-		 *
-		 **/
-
-		public bool Connected
-		{
-			get
-			{
-				if (_hCard != IntPtr.Zero)
-					return true;
-
-				return false;
-			}
-		}
-
-		/**v* SCardChannel/Protocol
-		 *
-		 * NAME
-		 *   SCardChannel.Protocol
-		 *
-		 * SYNOPSIS
-		 *   uint Protocol
-		 * 
-		 * INPUTS
-		 *   Before the smartcard has been
-		 * 
-		 * 
-		 * , set Protocol to specify the communication protocol(s) to be used
-		 *   by Connect(). Allowed values are SCARD.PROTOCOL_T0, SCARD.PROTOCOL_T1 or SCARD.PROTOCOL_T0|SCARD.PROTOCOL_T1.
-		 *
-		 * OUTPUT
-		 *   Once the smartcard has been connected (Connected == true), Protocol is the current communication protocol.
-		 *   Possible values are SCARD.PROTOCOL_T0 or SCARD.PROTOCOL_T1.
-		 * 
-		 * SEE ALSO
-		 *   SCardChannel.ProtocolAsString
-		 *
-		 **/
-		public uint Protocol
-		{
-			get
-			{
-				return _active_protocol;
-			}
-			set
-			{
-				_want_protocols = value;
-			}
-		}
-
-
-		/**v* SCardChannel/ProtocolAsString
-		 *
-		 * NAME
-		 *   SCardChannel.ProtocolAsString
-		 *
-		 * SYNOPSIS
-		 *   string ProtocolAsString
-		 * 
-		 * INPUTS
-		 *   Before the smartcard has been connected, set ProtocolAsString to specify the communication protocol(s) to be used
-		 *   by Connect(). Allowed values are "T=0", "T=1" or "*" (or "T=0|T=1").
-		 *
-		 * OUTPUT
-		 *   Once the smartcard has been connected (Connected == true), ProtocolAsString is the current communication protocol.
-		 *   Possible values are "T=0" or "T=1".
-		 *
-		 * SEE ALSO
-		 *   SCardChannel.Protocol
-		 *
-		 **/
-		public string ProtocolAsString
-		{
-			get
-			{
-				return SCARD.CardProtocolToString(_active_protocol);
-			}
-			set
-			{
-				value = value.ToUpper();
-
-				if (value.Equals("T=0"))
-				{
-					_want_protocols = SCARD.PROTOCOL_T0;
-				} else
-					if (value.Equals("T=1"))
-				{
-					_want_protocols = SCARD.PROTOCOL_T1;
-				} else
-					if (value.Equals("*") || value.Equals("AUTO") || value.Equals("T=0|T=1"))
-				{
-					_want_protocols = SCARD.PROTOCOL_T0 | SCARD.PROTOCOL_T1;
-				} else
-					if (value.Equals("RAW"))
-				{
-					_want_protocols = SCARD.PROTOCOL_RAW;
-				} else
-					if (value.Equals("") || value.Equals("NONE") || value.Equals("DIRECT"))
-				{
-					_want_protocols = SCARD.PROTOCOL_NONE;
-					_share_mode = SCARD.SHARE_DIRECT;
-				}
-			}
-		}
-
-		/**v* SCardChannel/ShareMode
-		 *
-		 * NAME
-		 *   SCardChannel.ShareMode
-		 *
-		 * SYNOPSIS
-		 *   uint ShareMode
-		 * 
-		 * INPUTS
-		 *   Before the smartcard has been connected, set ShareMode to specify the sharing mode to be used
-		 *   by Connect(). Allowed values are SCARD.SHARE_EXCLUSIVE, SCARD.SHARE_SHARED or SCARD.SHARE_DIRECT.
-		 *
-		 * SEE ALSO
-		 *   SCardChannel.ShareModeAsString
-		 *
-		 **/
-		public uint ShareMode
-		{
-			get
-			{
-				return _share_mode;
-			}
-			set
-			{
-				_share_mode = value;
-			}
-		}
-
-		/**v* SCardChannel/ShareModeAsString
-		 *
-		 * NAME
-		 *   SCardChannel.ShareModeAsString
-		 *
-		 * SYNOPSIS
-		 *   string ShareModeAsString
-		 * 
-		 * INPUTS
-		 *   Before the smartcard has been connected, set ShareModeAsString to specify the sharing mode to be used
-		 *   by Connect(). Allowed values are "EXCLUSIVE", "SHARED" or "DIRECT".
-		 *
-		 * SEE ALSO
-		 *   SCardChannel.ShareMode
-		 *
-		 **/
-		public string ShareModeAsString
-		{
-			get
-			{
-				return SCARD.CardShareModeToString(_share_mode);
-			}
-			set
-			{
-				value = value.ToUpper();
-
-				if (value.Equals("EXCLUSIVE"))
-				{
-					_share_mode = SCARD.SHARE_EXCLUSIVE;
-				} else
-					if (value.Equals("SHARED"))
-				{
-					_share_mode = SCARD.SHARE_SHARED;
-				} else
-					if (value.Equals("DIRECT"))
-				{
-					_want_protocols = SCARD.PROTOCOL_NONE;
-					_share_mode = SCARD.SHARE_DIRECT;
-				}
-			}
-		}
-
-		/**m* SCardChannel/Connect
-		 *
-		 * NAME
-		 *   SCardChannel.Connect()
-		 *
-		 * SYNOPSIS
-		 *   bool Connect()
-		 * 
-		 * DESCRIPTION
-		 *   Open the connection channel to the smartcard (according to the specified Protocol, default is either T=0 or T=1)
-		 *
-		 * OUTPUT
-		 *   Returns true if the connection has been successfully established.
-		 *   Returns false if not. See LastError for details.
-		 * 
-		 * SEE ALSO
-		 *   SCardChannel.CardPresent
-		 *   SCardChannel.CardAtr
-		 *   SCardChannel.Protocol
-		 *   SCardChannel.Transmit
-		 *
-		 **/
-
-		public bool Connect()
-		{
-			uint rc;
-
-			if (Connected)
-				return false;
-			
-			Trace.WriteLine("Connect to '" + _reader_name + "', share=" + _share_mode + ", protocol=" + _want_protocols);
-
-			rc = SCARD.Connect(_hContext, _reader_name, _share_mode, _want_protocols, ref _hCard, ref _active_protocol);
-			if (rc != SCARD.S_SUCCESS)
-			{
-				Trace.WriteLine("Connect error: " + rc);
-				_hCard = IntPtr.Zero;
-				_last_error = rc;
-				return false;
-			}
-
-			UpdateState();
-			return true;
-		}
-
-		/**m* SCardChannel/Disconnect
-		 *
-		 * NAME
-		 *   SCardChannel.Disconnect()
-		 *
-		 * SYNOPSIS
-		 *   bool Disconnect()
-		 *   bool Disconnect(uint disposition)
-		 * 
-		 * DESCRIPTION
-		 *   Close the connection channel
-		 *
-		 * INPUTS
-		 *   The disposition parameter must take one of the following values:
-		 *   - SCARD.EJECT_CARD
-		 *   - SCARD.UNPOWER_CARD
-		 *   - SCARD.RESET_CARD
-		 *   - SCARD.LEAVE_CARD
-		 *   If this parameter is omitted, it defaults to SCARD.RESET_CARD
-		 * 
-		 * SEE ALSO
-		 *   SCardChannel.Connect
-		 *
-		 **/
-
-		public bool Disconnect(uint disposition)
-		{
-			uint rc;
-			
-			Trace.WriteLine("Disconnect, disposition=" + disposition);
-
-			rc = SCARD.Disconnect(_hCard, disposition);
-			if (rc != SCARD.S_SUCCESS)
-				_last_error = rc;
-
-			_hCard = IntPtr.Zero;
-			
-			if (rc != SCARD.S_SUCCESS)
-				return false;
-			
-			return true;
-		}
-
-		public bool Disconnect()
-		{
-			return DisconnectReset();
-		}
-
-		/**m* SCardChannel/DisconnectEject
-		 *
-		 * NAME
-		 *   SCardChannel.DisconnectEject()
-		 *
-		 * SYNOPSIS
-		 *   bool DisconnectEject()
-		 * 
-		 * DESCRIPTION
-		 *   Same as SCardChannel.Disconnect(SCARD.EJECT_CARD)
-		 *
-		 **/
-
-		public bool DisconnectEject()
-		{
-			return Disconnect(SCARD.EJECT_CARD);
-		}
-
-		/**m* SCardChannel/DisconnectUnpower
-		 *
-		 * NAME
-		 *   SCardChannel.DisconnectUnpower()
-		 *
-		 * SYNOPSIS
-		 *   bool DisconnectUnpower()
-		 * 
-		 * DESCRIPTION
-		 *   Same as SCardChannel.Disconnect(SCARD.UNPOWER_CARD)
-		 *
-		 **/
-
-		public bool DisconnectUnpower()
-		{
-			return Disconnect(SCARD.UNPOWER_CARD);
-		}
-
-		/**m* SCardChannel/DisconnectReset
-		 *
-		 * NAME
-		 *   SCardChannel.DisconnectReset()
-		 *
-		 * SYNOPSIS
-		 *   bool DisconnectReset()
-		 * 
-		 * DESCRIPTION
-		 *   Same as SCardChannel.Disconnect(SCARD.RESET_CARD)
-		 *
-		 **/
-
-		public bool DisconnectReset()
-		{
-			return Disconnect(SCARD.RESET_CARD);
-		}
-
-		/**m* SCardChannel/DisconnectLeave
-		 *
-		 * NAME
-		 *   SCardChannel.DisconnectLeave()
-		 *
-		 * SYNOPSIS
-		 *   void DisconnectLeave()
-		 * 
-		 * DESCRIPTION
-		 *   Same as SCardChannel.Disconnect(SCARD.LEAVE_CARD)
-		 *
-		 **/
-
-		public bool DisconnectLeave()
-		{
-			return Disconnect(SCARD.LEAVE_CARD);
-		}
-
-		/**m* SCardChannel/Reconnect
-		 *
-		 * NAME
-		 *   SCardChannel.Reconnect()
-		 *
-		 * SYNOPSIS
-		 *   bool Reconnect()
-		 *   bool Reconnect(uint disposition)
-		 * 
-		 * DESCRIPTION
-		 *   Re-open the connection channel to the smartcard
-		 *
-		 * INPUTS
-		 *   The disposition parameter must take one of the following values:
-		 *   - SCARD.EJECT_CARD
-		 *   - SCARD.UNPOWER_CARD
-		 *   - SCARD.RESET_CARD
-		 *   - SCARD.LEAVE_CARD
-		 *   If this parameter is omitted, it defaults to SCARD.RESET_CARD
-		 *
-		 * OUTPUT
-		 *   Returns true if the connection has been successfully re-established.
-		 *   Returns false if not. See LastError for details.
-		 * 
-		 * SEE ALSO
-		 *   SCardChannel.Connect
-		 *   SCardChannel.Disconnect
-		 *
-		 **/
-
-		public bool Reconnect(uint disposition)
-		{
-			uint rc;
-
-			if (!Connected)
-				return false;
-
-			rc =
-				SCARD.Reconnect(_hCard, _share_mode, _want_protocols, disposition, ref _active_protocol);
-			if (rc != SCARD.S_SUCCESS)
-			{
-				_hCard = IntPtr.Zero;
-				_last_error = rc;
-				return false;
-			}
-
-			UpdateState();
-			return true;
-		}
-
-		public void Reconnect()
-		{
-			ReconnectReset();
-		}
-
-		/**m* SCardChannel/ReconnectEject
-		 *
-		 * NAME
-		 *   SCardChannel.ReconnectEject()
-		 *
-		 * SYNOPSIS
-		 *   void ReconnectEject()
-		 * 
-		 * DESCRIPTION
-		 *   Same as SCardChannel.Reconnect(SCARD.EJECT_CARD)
-		 *
-		 **/
-
-		public void ReconnectEject()
-		{
-			Reconnect(SCARD.EJECT_CARD);
-		}
-
-		/**m* SCardChannel/ReconnectUnpower
-		 *
-		 * NAME
-		 *   SCardChannel.ReconnectUnpower()
-		 *
-		 * SYNOPSIS
-		 *   void ReconnectUnpower()
-		 * 
-		 * DESCRIPTION
-		 *   Same as SCardChannel.Reconnect(SCARD.UNPOWER_CARD)
-		 *
-		 **/
-
-		public void ReconnectUnpower()
-		{
-			Reconnect(SCARD.UNPOWER_CARD);
-		}
-
-		/**m* SCardChannel/ReconnectReset
-		 *
-		 * NAME
-		 *   SCardChannel.ReconnectReset()
-		 *
-		 * SYNOPSIS
-		 *   void ReconnectReset()
-		 * 
-		 * DESCRIPTION
-		 *   Same as SCardChannel.Disconnect(SCARD.RESET_CARD)
-		 *
-		 **/
-
-		public void ReconnectReset()
-		{
-			Reconnect(SCARD.RESET_CARD);
-		}
-
-		/**m* SCardChannel/ReconnectLeave
-		 *
-		 * NAME
-		 *   SCardChannel.ReconnectLeave()
-		 *
-		 * SYNOPSIS
-		 *   void ReconnectLeave()
-		 * 
-		 * DESCRIPTION
-		 *   Same as SCardChannel.Reconnect(SCARD.LEAVE_CARD)
-		 *
-		 **/
-
-		public void ReconnectLeave()
-		{
-			Reconnect(SCARD.LEAVE_CARD);
-		}
-		
-		/**m* SCardChannel/Transmit
-		 *
-		 * NAME
-		 *   SCardChannel.Transmit()
-		 *
-		 * SYNOPSIS
-		 *   bool  Transmit()
-		 *   RAPDU Transmit(CAPDU capdu)
-		 *   bool  Transmit(CAPDU capdu, ref RAPDU rapdu)
-		 *   void  Transmit(CAPDU capdu, TransmitDoneCallback callback)
-		 * 
-		 * DESCRIPTION
-		 *   Sends a command APDU (CAPDU) to the connected card, and retrieves its response APDU (RAPDU)
-		 *
-		 * SOURCE
-		 *
-		 *   SCardChannel card = new SCardChannel( ... reader ... );
-		 *   if (!card.Connect( SCARD.PROTOCOL_T0|SCARD.PROTOCOL_T1 ))
-		 *   {
-		 *     // handle error
-		 *   }
-		 *
-		 *
-		 *   // Example 1
-		 *   // ---------
-		 *
-		 *   card.Command = new CAPDU("00 A4 00 00 02 3F 00");
-		 *   if (!card.Transmit())
-		 *   {
-		 *     // handle error
-		 *   }
-		 *   MessageBox.Show("Card answered: " + card.Response.AsString(" "));
-		 *
-		 *
-		 *   // Example 2
-		 *   // ---------
-		 *
-		 *   RAPDU response = card.Transmit(new CAPDU("00 A4 00 00 02 3F 00")))
-		 *   if (response == null)
-		 *   {
-		 *     // handle error
-		 *   }
-		 *   MessageBox.Show("Card answered: " + response.AsString(" "));
-		 *
-		 *
-		 *   // Example 3
-		 *   // ---------
-		 *
-		 *   CAPDU command  = new CAPDU("00 A4 00 00 02 3F 00");
-		 *   RAPDU response = new RAPDU();
-		 *   if (!card.Transmit(command, ref response))
-		 *   {
-		 *     // handle error
-		 *   }
-		 *   MessageBox.Show("Card answered: " + response.AsString(" "));
-		 *
-		 *
-		 *   // Example 4
-		 *   // ---------
-		 *
-		 *   // In this example the Transmit is performed by a background thread
-		 *   // We supply a delegate so the main class (window/form) will be notified
-		 *   // when Transmit will return
-		 *
-		 *   delegate void OnTransmitDoneInvoker(RAPDU response);
-		 *
-		 *   void OnTransmitDone(RAPDU response)
-		 *   {
-		 *     // Ensure we're back in the context of the main thread (application's message pump)
-		 *     if (this.InvokeRequired)
-		 *     {
-		 *       this.BeginInvoke(new OnTransmitDoneInvoker(OnTransmitDone), response);
-		 *       return;
-		 *     }
-		 *
-		 *     if (response == null)
-		 *     {
-		 *       // handle error
-		 *     }
-		 *
-		 *     MessageBox.Show("Card answered: " + response.AsString(" "));
-		 *   }
-		 *
-		 *  card.Transmit(new CAPDU("00 A4 00 00 02 3F 00"), new SCardChannel.TransmitDoneCallback(OnTransmitDone));
-		 *
-		 * 
-		 * SEE ALSO
-		 *   SCardChannel.Connect
-		 *   SCardChannel.Transmit
-		 *   SCardChannel.Command
-		 *   SCardChannel.Response
-		 *
-		 **/
-		#region Transmit
-		public bool Transmit()
-		{
-			byte[]rsp_buffer = new byte[258];
-			uint rsp_length = 258;
-			uint rc;
-			IntPtr SendPci = IntPtr.Zero;
-			
-			switch (_active_protocol)
-			{
-				case SCARD.PROTOCOL_T0 :
-					SendPci = SCARD.PCI_T0();
-					break;
-				case SCARD.PROTOCOL_T1 :
-					SendPci = SCARD.PCI_T1();
-					break;
-				case SCARD.PROTOCOL_RAW :
-					SendPci = SCARD.PCI_RAW();
-					break;
-					default :
-						break;
-			}
-
-			_rapdu = null;
-			
-			Trace.WriteLine("Transmit << " + _capdu.AsString());
-
-			rc = SCARD.Transmit(_hCard,
-			                    SendPci,
-			                    _capdu.GetBytes(),
-			                    (uint) _capdu.Length,
-			                    IntPtr.Zero, /* RecvPci is likely to remain NULL */
-			                    rsp_buffer,
-			                    ref rsp_length);
-
-			if (rc != SCARD.S_SUCCESS)
-			{
-				Trace.WriteLine("Transmit : " + rc);
-				_last_error = rc;
-				return false;
-			}
-
-			_rapdu = new RAPDU(rsp_buffer, (int) rsp_length);
-			
-			Trace.WriteLine("Transmit >> " + _rapdu.AsString());
-			
-			return true;
-		}
-
-		public bool Transmit(CAPDU capdu, ref RAPDU rapdu)
-		{
-			_capdu = capdu;
-
-			if (!Transmit())
-				return false;
-
-			rapdu = _rapdu;
-			return true;
-		}
-
-		public RAPDU Transmit(CAPDU capdu)
-		{
-			_capdu = capdu;
-
-			if (!Transmit())
-				return null;
-
-			return _rapdu;
-		}
-
-		public void Transmit(CAPDU capdu, TransmitDoneCallback callback)
-		{
-			if (_transmit_thread != null)
-				_transmit_thread = null;
-
-			_capdu = capdu;
-
-			if (callback != null)
-			{
-				_transmit_done_callback = callback;
-				_transmit_thread = new Thread(TransmitFunction);
-				_transmit_thread.Start();
-			}
-		}
-
-		private void TransmitFunction()
-		{
-			if (Transmit())
-			{
-				if (_transmit_done_callback != null)
-					_transmit_done_callback(_rapdu);
-			} else
-			{
-				if (_transmit_done_callback != null)
-					_transmit_done_callback(null);
-			}
-		}
-		
-
-		/**v* SCardChannel/Command
-		 *
-		 * NAME
-		 *   SCardChannel.Command
-		 *
-		 * SYNOPSIS
-		 *   CAPDU Command
-		 * 
-		 * DESCRIPTION
-		 *   C-APDU to be sent to the card through SCardChannel.Transmit
-		 *
-		 **/
-		public CAPDU Command
-		{
-			get
-			{
-				return _capdu;
-			}
-			set
-			{
-				_capdu = value;
-			}
-		}
-
-		/**v* SCardChannel/Response
-		 *
-		 * NAME
-		 *   SCardChannel.Response
-		 *
-		 * SYNOPSIS
-		 *   RAPDU Response
-		 * 
-		 * DESCRIPTION
-		 *   R-APDU returned by the card after a succesfull call to SCardChannel.Transmit
-		 *
-		 **/
-		public RAPDU Response
-		{
-			get
-			{
-				return _rapdu;
-			}
-		}
-		#endregion
-
-		#region Control
-		public byte[] Control(byte[] cctrl)
-		{
-			byte[] rctrl = new byte[280];
-			uint rl = 0;
-			uint rc;
-			
-			Trace.WriteLine("Control << " + (new CardBuffer(cctrl)).AsString());
-
-			rc = SCARD.Control(_hCard,
-			                   SCARD.IOCTL_CSB6_PCSC_ESCAPE,
-			                   cctrl,
-			                   (uint) cctrl.Length,
-			                   rctrl,
-			                   280,
-			                   ref rl);
-
-			if (rc == 1)
-			{
-				rc = SCARD.Control(_hCard,
-				                   SCARD.IOCTL_MS_CCID_ESCAPE,
-				                   cctrl,
-				                   (uint) cctrl.Length,
-				                   rctrl,
-				                   280,
-				                   ref rl);
-
-			}
-			
-			if (rc != SCARD.S_SUCCESS)
-			{
-				Trace.WriteLine("Control: " + rc);
-				_last_error = rc;
-				rctrl = null;
-				return null;
-			}
-			
-			byte[] r = new byte[rl];
-			for (int i=0; i<rl; i++)
-				r[i] = rctrl[i];
-			
-			Trace.WriteLine("Control >> " + (new CardBuffer(r)).AsString());
-
-			return r;
-		}
-
-		public bool Control()
-		{
-			byte[] r = Control(_cctrl.GetBytes());
-			
-			if (r == null)
-				return false;
-			
-			_rctrl = null;
-			
-			if (r.Length > 0)
-				_rctrl = new CardBuffer(r);
-
-			return true;
-		}
-		
-		public bool Control(CardBuffer cctrl, ref CardBuffer rctrl)
-		{
-			_cctrl = cctrl;
-
-			if (!Control())
-				return false;
-			
-			rctrl = _rctrl;
-			return true;
-		}
-
-		public CardBuffer Control(CardBuffer cctrl)
-		{
-			_cctrl = cctrl;
-
-			if (!Control())
-				return null;
-
-			return _rctrl;
-		}
-
-		public bool Leds(byte red, byte green, byte blue)
-		{
-			byte[]buffer = new byte[5];
-
-			buffer[0] = 0x58;
-			buffer[1] = 0x1E;
-			buffer[2] = red;
-			buffer[3] = green;
-			buffer[4] = blue;
-
-			if (Control(new CardBuffer(buffer)) != null)
-				return true;
-
-			return false;
-		}
-		
-		public bool LedsDefault()
-		{
-			byte[]buffer = new byte[2];
-
-			buffer[0] = 0x58;
-			buffer[1] = 0x1E;
-
-			if (Control(new CardBuffer(buffer)) != null)
-				return true;
-
-			return false;
-		}
-
-		public bool Buzzer(ushort duration_ms)
-		{
-			byte[]buffer = new byte[4];
-
-			buffer[0] = 0x58;
-			buffer[1] = 0x1C;
-			buffer[2] = (byte) (duration_ms / 0x0100);
-			buffer[3] = (byte) (duration_ms % 0x0100);
-
-			if (Control(new CardBuffer(buffer)) != null)
-				return true;
-
-			return false;
-		}
-		
-		public bool BuzzerDefault()
-		{
-			byte[]buffer = new byte[2];
-
-			buffer[0] = 0x58;
-			buffer[1] = 0x1C;
-
-			if (Control(new CardBuffer(buffer)) != null)
-				return true;
-
-			return false;
-		}
-		#endregion
-
-
-		/**v* SCardChannel/LastError
-		 *
-		 * NAME
-		 *   SCardChannel.LastError
-		 *
-		 * SYNOPSIS
-		 *   uint LastError
-		 * 
-		 * OUTPUT
-		 *   Returns the last error encountered by the object when working with SCARD functions.
-		 *
-		 * SEE ALSO
-		 *   SCardChannel.LastErrorAsString
-		 *
-		 **/
-		public uint LastError
-		{
-			get
-			{
-				return _last_error;
-			}
-		}
-
-		/**v* SCardChannel/LastErrorAsString
-		 *
-		 * NAME
-		 *   SCardChannel.LastErrorAsString
-		 *
-		 * SYNOPSIS
-		 *   string LastErrorAsString
-		 * 
-		 * OUTPUT
-		 *   Returns the last error encountered by the object when working with SCARD functions.
-		 *
-		 * SEE ALSO
-		 *   SCardChannel.LastError
-		 *
-		 **/
-		public string LastErrorAsString
-		{
-			get
-			{
-				return SCARD.ErrorToString(_last_error);
-			}
-		}
-
-	}
-	#endregion
-
-	#region CardBuffer class
-
-	/**c* SpringCardPCSC/CardBuffer
-	 *
-	 * NAME
-	 *   CardBuffer
-	 * 
-	 * DESCRIPTION
-	 *   The CardBuffer provides convenient access to byte-arrays
-	 * 
-	 * DERIVED BY
-	 *   CAPDU
-	 *   RAPDU
-	 *
-	 **/
-
-	public class CardBuffer
-	{
-		protected byte[] _bytes = null;
-
-		private bool isb(char c)
-		{
-			bool r = false;
-
-			if ((c >= '0') && (c <= '9'))
-			{
-				r = true;
-			} else if ((c >= 'A') && (c <= 'F'))
-			{
-				r = true;
-			} else if ((c >= 'a') && (c <= 'f'))
-			{
-				r = true;
-			}
-
-			return r;
-		}
-
-		private byte htob(char c)
-		{
-			int r = 0;
-
-			if ((c >= '0') && (c <= '9'))
-			{
-				r = c - '0';
-			} else if ((c >= 'A') && (c <= 'F'))
-			{
-				r = c - 'A';
-				r += 10;
-			} else if ((c >= 'a') && (c <= 'f'))
-			{
-				r = c - 'a';
-				r += 10;
-			}
-
-			return (byte) r;
-		}
-		
-		public CardBuffer()
-		{
-
-		}
-
-		public CardBuffer(byte b)
-		{
-			_bytes = new byte[1];
-			_bytes[0] = b;
-		}
-
-		public CardBuffer(ushort w)
-		{
-			_bytes = new byte[2];
-			_bytes[0] = (byte) (w / 0x0100);
-			_bytes[1] = (byte) (w % 0x0100);
-		}
-
-		public CardBuffer(byte[]bytes)
-		{
-			_bytes = bytes;
-		}
-
-		public CardBuffer(byte[]bytes, long length)
-		{
-			SetBytes(bytes, length);
-		}
-
-		public CardBuffer(byte[]bytes, long offset, long length)
-		{
-			SetBytes(bytes, offset, length);
-		}
-
-		public CardBuffer(string str)
-		{
-			SetString(str);
-		}
-		
-		public byte GetByte(long offset)
-		{
-			if (_bytes == null)
-				return 0;
-			
-			if (offset >= _bytes.Length)
-				offset = 0;
-
-			return _bytes[offset];
-		}
-
-		public byte[] GetBytes()
-		{
-			return _bytes;
-		}
-
-		public byte[] GetBytes(long length)
-		{
-			if (_bytes == null)
-				return null;
-			
-			if (length < 0)
-				length = _bytes.Length - length;
-			
-			if (length > _bytes.Length)
-				length = _bytes.Length;
-			
-			byte[] r = new byte[length];
-			for (long i=0; i<length; i++)
-				r[i] = _bytes[i];
-			
-			return r;
-		}
-
-		public byte[] GetBytes(long offset, long length)
-		{
-			if (_bytes == null)
-				return null;
-			
-			if (offset < 0)
-				offset = _bytes.Length - offset;
-			
-			if (length < 0)
-				length = _bytes.Length - length;
-
-			if (offset >= _bytes.Length)
-				return null;
-
-			if (length > (_bytes.Length - offset))
-				length = _bytes.Length - offset;
-			
-			byte[] r = new byte[length];
-			for (long i=0; i<length; i++)
-				r[i] = _bytes[offset+i];
-			
-			return r;
-		}
-		
-		public char[] GetChars(long offset, long length)
-		{
-			byte[] b = GetBytes(offset, length);
-			
-			if (b == null) return null;
-			
-			char[] c = new char[b.Length];
-			for (long i=0; i<b.Length; i++)
-				c[i] = (char) b[i];
-			
-			return c;
-		}
-
-		public void SetBytes(byte[]bytes)
-		{
-			_bytes = bytes;
-		}
-
-		public void SetBytes(byte[]bytes, long length)
-		{
-			_bytes = new byte[length];
-
-			long i;
-
-			for (i = 0; i < length; i++)
-				_bytes[i] = bytes[i];
-		}
-
-		public void SetBytes(byte[]bytes, long offset, long length)
-		{
-			_bytes = new byte[length];
-
-			long i;
-
-			for (i = 0; i < length; i++)
-				_bytes[i] = bytes[offset + i];
-		}
-		
-		public void Append(byte[]bytes)
-		{
-			if ((bytes == null) || (bytes.Length == 0))
-				return;
-			
-			byte[] old_bytes = GetBytes();
-
-			if ((old_bytes == null) || (old_bytes.Length == 0))
-			{
-				SetBytes(bytes);
-				return;
-			}
-			
-			_bytes = new byte[old_bytes.Length + bytes.Length];
-			
-			for (long i=0; i<old_bytes.Length; i++)
-				_bytes[i] = old_bytes[i];
-			for (long i=0; i<bytes.Length; i++)
-				_bytes[old_bytes.Length+i] = bytes[i];
-
-		}
-
-		public void SetString(string str)
-		{
-			string s = "";
-			int i, l;
-
-			l = str.Length;
-			for (i = 0; i < l; i++)
-			{
-				char c = str[i];
-
-				if (isb(c))
-					s = s + c;
-			}
-
-			l = s.Length;
-			_bytes = new Byte[l / 2];
-
-			for (i = 0; i < l; i += 2)
-			{
-				_bytes[i / 2] = htob(s[i]);
-				_bytes[i / 2] *= 0x10;
-				_bytes[i / 2] += htob(s[i + 1]);
-			}
-		}
-
-		public virtual string AsString(string separator)
-		{
-			string s = "";
-			long i;
-
-			if (_bytes != null)
-			{
-				for (i = 0; i < _bytes.Length; i++)
-				{
-					if (i > 0)
-						s = s + separator;
-					s = s + String.Format("{0:X02}", _bytes[i]);
-				}
-			}
-
-			return s;
-		}
-
-		public virtual string AsString()
-		{
-			return AsString("");
-		}
-
-		protected byte[] Bytes
-		{
-			get
-			{
-				return _bytes;
-			}
-			set
-			{
-				_bytes = value;
-			}
-		}
-
-		public int Length
-		{
-			get
-			{
-				if (_bytes == null)
-					return 0;
-				return _bytes.Length;
-			}
-		}
-		
-		public static byte[] BytesFromString(string s)
-		{
-			byte[] r = new byte[s.Length];
-			for (int i=0; i<r.Length; i++)
-			{
-				char c = s[i];
-				r[i] = (byte) (c & 0x7F);
-			}
-			return r;
-		}
-		
-		public static string StringFromBytes(byte[] a)
-		{
-			string r = "";
-			if (a != null)
-			{
-				for (int i=0; i<a.Length; i++)
-				{
-					char c = (char) a[i];
-					r += c;
-				}
-			}
-			return r;
-		}
-	}
-	#endregion
-
-	#region CAPDU class
-
-	/**c* SpringCardPCSC/CAPDU
-	 *
-	 * NAME
-	 *   CAPDU
-	 * 
-	 * DESCRIPTION
-	 *   The CAPDU object is used to format and send COMMAND APDUs (according to ISO 7816-4) to the smartcard
-	 * 
-	 * DERIVED FROM
-	 *   CardBuffer
-	 *
-	 **/
-
-	public class CAPDU:CardBuffer
-	{
-		public CAPDU()
-		{
-
-		}
-
-		public CAPDU(byte[]bytes)
-		{
-			_bytes = bytes;
-		}
-
-		public CAPDU(byte CLA, byte INS, byte P1, byte P2)
-		{
-			_bytes = new byte[4];
-			_bytes[0] = CLA;
-			_bytes[1] = INS;
-			_bytes[2] = P1;
-			_bytes[3] = P2;
-		}
-
-		public CAPDU(byte CLA, byte INS, byte P1, byte P2, byte P3)
-		{
-			_bytes = new byte[5];
-			_bytes[0] = CLA;
-			_bytes[1] = INS;
-			_bytes[2] = P1;
-			_bytes[3] = P2;
-			_bytes[4] = P3;
-		}
-
-		public CAPDU(byte CLA, byte INS, byte P1, byte P2, byte[] data)
-		{
-			int i;
-			_bytes = new byte[5 + data.Length];
-			_bytes[0] = CLA;
-			_bytes[1] = INS;
-			_bytes[2] = P1;
-			_bytes[3] = P2;
-			_bytes[4] = (byte) data.Length;
-			for (i = 0; i < data.Length; i++)
-				_bytes[5 + i] = data[i];
-		}
-
-		public CAPDU(byte CLA, byte INS, byte P1, byte P2, string data)
-		{
-			int i;
-			byte[] _data = (new CardBuffer(data)).GetBytes();
-			_bytes = new byte[5 + _data.Length];
-			_bytes[0] = CLA;
-			_bytes[1] = INS;
-			_bytes[2] = P1;
-			_bytes[3] = P2;
-			_bytes[4] = (byte)_data.Length;
-			for (i = 0; i < _data.Length; i++)
-				_bytes[5 + i] = _data[i];
-		}
-
-		public CAPDU(byte CLA, byte INS, byte P1, byte P2, byte[] data, byte LE)
-		{
-			int i;
-			_bytes = new byte[6 + data.Length];
-			_bytes[0] = CLA;
-			_bytes[1] = INS;
-			_bytes[2] = P1;
-			_bytes[3] = P2;
-			_bytes[4] = (byte) data.Length;
-			for (i = 0; i < data.Length; i++)
-				_bytes[5 + i] = data[i];
-			_bytes[5 + data.Length] = LE;
-		}
-
-		public CAPDU(byte CLA, byte INS, byte P1, byte P2, string data, byte LE)
-		{
-			int i;
-			byte[] _data = (new CardBuffer(data)).GetBytes();
-			_bytes = new byte[6 + _data.Length];
-			_bytes[0] = CLA;
-			_bytes[1] = INS;
-			_bytes[2] = P1;
-			_bytes[3] = P2;
-			_bytes[4] = (byte)_data.Length;
-			for (i = 0; i < _data.Length; i++)
-				_bytes[5 + i] = _data[i];
-			_bytes[5 + _data.Length] = LE;
-		}
-
-		public CAPDU(string str)
-		{
-			SetString(str);
-		}
-
-		public byte CLA
-		{
-			get
-			{
-				if (_bytes == null)
-					return 0xFF;
-				return _bytes[0];
-			}
-			set
-			{
-				if (_bytes == null)
-					_bytes = new byte[4];
-				_bytes[0] = value;
-			}
-		}
-
-		public byte INS
-		{
-			get
-			{
-				if (_bytes == null)
-					return 0xFF;
-				return _bytes[1];
-			}
-			set
-			{
-				if (_bytes == null)
-					_bytes = new byte[4];
-				_bytes[1] = value;
-			}
-		}
-
-		public byte P1
-		{
-			get
-			{
-				if (_bytes == null)
-					return 0xFF;
-				return _bytes[2];
-			}
-			set
-			{
-				if (_bytes == null)
-					_bytes = new byte[4];
-				_bytes[2] = value;
-			}
-		}
-
-		public byte P2
-		{
-			get
-			{
-				if (_bytes == null)
-					return 0xFF;
-				return _bytes[3];
-			}
-			set
-			{
-				if (_bytes == null)
-					_bytes = new byte[4];
-				_bytes[3] = value;
-			}
-		}
-		
-		private bool hasLc()
-		{
-			if (!Valid())
-				return false;
-			if (_bytes.Length <= 5)
-				return false;
-			return true;
-		}
-
-		private bool hasLe()
-		{
-			if (!Valid())
-				return false;
-			if (_bytes.Length == 6 + _bytes[4])
-				return false;
-			return true;
-		}
-		
-		public bool Valid()
-		{
-			if (_bytes == null)
-				return false;
-			if (_bytes.Length <= 4)
-				return false;
-			if (_bytes.Length == 5)
-				return true;
-			if (_bytes.Length == 5 + _bytes[4])
-				return true;
-			if (_bytes.Length == 6 + _bytes[4])
-				return true;
-			return false;
-		}
-
-		public byte Lc
-		{
-			get
-			{
-				if (!hasLc())
-					return 0x00;
-
-				return _bytes[4];
-			}
-		}
-
-		public byte Le
-		{
-			get
-			{
-				if (!hasLe())
-					return 0x00;
-				return _bytes[_bytes.Length - 1];
-			}
-
-			set
-			{
-				if (_bytes == null)
-					_bytes = new byte[5];
-				if (!hasLe())
-				{
-					byte[] t = new byte[_bytes.Length+1];
-					for (int i=0; i<_bytes.Length; i++)
-						t[i] = _bytes[i];
-					_bytes = t;
-				}
-				_bytes[_bytes.Length-1] = value;
-			}
-		}
-
-		public CardBuffer data
-		{
-			get
-			{
-				if (!hasLc())
-					return null;
-				
-				byte[] t = new byte[Lc];
-				for (int i=0; i<t.Length; i++)
-					t[i] = _bytes[5+i];
-				
-				return new CardBuffer(t);
-			}
-
-			set
-			{
-				int length;
-				uint apdu_size;
-				
-				if (value == null)
-					length = 0;
-				else
-					length = value.Length;
-				
-				if (length == 0)
-				{
-					
-				} else
-					if (length < 256)
-				{
-					if (hasLe())
-						apdu_size = (uint) (6 + length);
-					else
-						apdu_size = (uint) (5 + length);
-					
-					byte[] t = new byte[apdu_size];
-					
-					if (Valid())
-					{
-						for (int i=0; i<4; i++)
-							t[i] = _bytes[i];
-						if (hasLe())
-							t[t.Length-1] = _bytes[_bytes.Length-1];
-					}
-					
-					for (int i=0; i<length; i++)
-						t[5+i] = value.GetByte(i);
-					
-					t[4] = (byte) length;
-					
-					_bytes = t;
-				} else
-				{
-					/* Oups ? */
-				}
-			}
-		}
-	}
-	#endregion
-
-	#region RAPDU class
-
-	/**c* SpringCardPCSC/RAPDU
-	 *
-	 * NAME
-	 *   RAPDU
-	 * 
-	 * DESCRIPTION
-	 *   The RAPDU object is used to receive and decode RESPONSE APDUs (according to ISO 7816-4) from the smartcard
-	 * 
-	 * DERIVED FROM
-	 *   CardBuffer
-	 *
-	 **/
-
-	public class RAPDU:CardBuffer
-	{
-		public bool isValid
-		{
-			get
-			{
-				return (_bytes.Length >= 2);
-			}
-		}
-
-		public RAPDU(byte[]bytes, int length)
-		{
-			SetBytes(bytes, length);
-		}
-		
-		public RAPDU(byte[]bytes)
-		{
-			SetBytes(bytes);
-		}
-		
-		public RAPDU(byte[]bytes, byte SW1, byte SW2)
-		{
-			byte[] t;
-			if (bytes == null)
-			{
-				t = new byte[2];
-				t[0] = SW1;
-				t[1] = SW2;
-			} else
-			{
-				t = new byte[bytes.Length + 2];
-				for (int i=0; i<bytes.Length; i++)
-					t[i] = bytes[i];
-				t[bytes.Length] = SW1;
-				t[bytes.Length+1] = SW2;
-			}
-			SetBytes(t);
-		}
-
-		public RAPDU(byte sw1, byte sw2)
-		{
-			byte[] t = new byte[2];
-			t[0] = sw1;
-			t[1] = sw2;
-			SetBytes(t);
-		}
-
-		public RAPDU(ushort sw)
-		{
-			byte[] t = new byte[2];
-			t[0] = (byte) (sw / 0x0100);
-			t[1] = (byte) (sw % 0x0100);
-			SetBytes(t);
-		}
-
-		public bool hasData
-		{
-			get
-			{
-				if ((_bytes == null) || (_bytes.Length < 2))
-					return false;
-				
-				return true;
-			}
-		}
-
-		public CardBuffer data
-		{
-			get
-			{
-				if ((_bytes == null) || (_bytes.Length < 2))
-					return null;
-
-				return new CardBuffer(_bytes, _bytes.Length - 2);
-			}
-		}
-
-		public byte SW1
-		{
-			get
-			{
-				if ((_bytes == null) || (_bytes.Length < 2))
-					return 0xCC;
-				return _bytes[_bytes.Length - 2];
-			}
-		}
-
-		public byte SW2
-		{
-			get
-			{
-				if ((_bytes == null) || (_bytes.Length < 2))
-					return 0xCC;
-				return _bytes[_bytes.Length - 1];
-			}
-		}
-
-		public ushort SW
-		{
-			get
-			{
-				if ((_bytes == null) || (_bytes.Length < 2))
-					return 0xCCCC;
-
-				ushort r;
-
-				r = _bytes[_bytes.Length - 2];
-				r *= 0x0100;
-				r += _bytes[_bytes.Length - 1];
-
-				return r;
-			}
-		}
-
-		public string SWString
-		{
-			get
-			{
-				return SCARD.CardStatusWordsToString(SW1, SW2);
-			}
-		}
-	}
-	#endregion
 }
+

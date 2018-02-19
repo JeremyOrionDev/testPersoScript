@@ -1,0 +1,139 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <ProjectGuid>{36BE1ECB-80F1-4791-BF51-CF8C1CE35DD5}</ProjectGuid>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <OutputType>Library</OutputType>
+    <RootNamespace>SpringCardNfc</RootNamespace>
+    <AssemblyName>SpringCardNfc</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <AllowUnsafeBlocks>False</AllowUnsafeBlocks>
+    <NoStdLib>False</NoStdLib>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <SignAssembly>False</SignAssembly>
+    <DelaySign>False</DelaySign>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Platform)' == 'x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <RegisterForComInterop>False</RegisterForComInterop>
+    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
+    <BaseAddress>4194304</BaseAddress>
+    <FileAlignment>4096</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <OutputPath>..\..\bin\</OutputPath>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <OutputPath>..\..\bin\</OutputPath>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+    <DefineConstants>TRACE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="SpringCardPcsc">
+      <HintPath>..\..\bin\SpringCardPcsc.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\NfcForum\LLCP\Llcp.cs">
+      <Link>Llcp.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\LLCP\LlcpClient.cs">
+      <Link>LlcpClient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\LLCP\LlcpInitiator.cs">
+      <Link>LlcpInitiator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\LLCP\LlcpLink.cs">
+      <Link>LlcpLink.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\LLCP\LlcpPdus.cs">
+      <Link>LlcpPdus.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\LLCP\LlcpServer.cs">
+      <Link>LlcpServer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\LLCP\LlcpService.cs">
+      <Link>LlcpService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\LLCP\SNEP\SnepClient.cs">
+      <Link>SnepClient.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\LLCP\SNEP\SnepServer.cs">
+      <Link>SnepServer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\LLCP\SNEP\SnepService.cs">
+      <Link>SnepService.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\NDEF\AbsoluteUri.cs">
+      <Link>AbsoluteUri.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\NDEF\Ndef.cs">
+      <Link>Ndef.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\NDEF\Rtd.cs">
+      <Link>Rtd.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\NDEF\RtdAlternativeCarrier.cs">
+      <Link>RtdAlternativeCarrier.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\NDEF\RtdHandoverSelector.cs">
+      <Link>RtdHandoverSelector.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\NDEF\RtdMedia.cs">
+      <Link>RtdMedia.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\NDEF\RtdSmartPoster.cs">
+      <Link>RtdSmartPoster.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\NDEF\RtdText.cs">
+      <Link>RtdText.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\NDEF\RtdUri.cs">
+      <Link>RtdUri.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\NDEF\RtdVCard.cs">
+      <Link>RtdVCard.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\NDEF\Tlv.cs">
+      <Link>Tlv.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\SpringCardNFCAdapter.cs">
+      <Link>SpringCardNFCAdapter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\Tags\NfcTag.cs">
+      <Link>NfcTag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\Tags\NfcTagType2.cs">
+      <Link>NfcTagType2.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\Tags\NfcTagType4.cs">
+      <Link>NfcTagType4.cs</Link>
+    </Compile>
+    <Compile Include="..\..\NfcForum\Tags\NfcTagType4_Desfire.cs">
+      <Link>NfcTagType4_Desfire.cs</Link>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.Targets" />
+</Project>

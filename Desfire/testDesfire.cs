@@ -708,7 +708,7 @@ namespace Desfire
             }
             return aa;
         }
-        public string Chaine_OuExclusif(string text1, string text2)
+        public static string Chaine_OuExclusif(string text1, string text2)
         {
             int[] Tab_textXor = new int[text1.Length / 2];
             int[] Tab_text1 = new int[text1.Length / 2];
@@ -1113,6 +1113,7 @@ namespace Desfire
             if (NumKey.Length < 2) NumKey = "0" + NumKey;
             switch (Mode)
             {
+                #region nativeMode
                 case 1: //DESFire Native mode
                     RNDA = "1122334455667788";
                     IniVector = "0000000000000000";
@@ -1145,8 +1146,10 @@ namespace Desfire
                     else
                         StatusReponse = 1;
                     break;
+                #endregion
                 case 2: //TDES Standard mode
                     break;
+                #region CaseAES
                 case 3: //AES  
                     string[] Tab_PlainText;
                     string textXor, chaine_crypter;
@@ -1196,7 +1199,7 @@ namespace Desfire
                     else
                         StatusReponse = 1;
                     break;
-
+                    #endregion
             }
 
             //return StatusReponse;
@@ -1492,7 +1495,7 @@ namespace Desfire
             }
             return Chaine_renvoie;
         }
-        public string AES_Enciphering(CardData PlainText, CardData Key, CardData IniVector, int Mode)
+        public static string AES_Enciphering(CardData PlainText, CardData Key, CardData IniVector, int Mode)
         {
             //PlainText = Chaine a crypter
             //Key = Cl� de cryptage
