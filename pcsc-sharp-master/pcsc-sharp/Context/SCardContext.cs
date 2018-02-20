@@ -517,7 +517,7 @@ namespace PCSC
         /// <value>0xFFFFFFFF</value>
         public static IntPtr INFINITE {
             get {
-                // Hack to avoid Overflow exception on Windows 7 32bit
+                 
                 if (Marshal.SizeOf(typeof(IntPtr)) == 4) {
                     return unchecked((IntPtr) (int) 0xFFFFFFFF);
                 }
