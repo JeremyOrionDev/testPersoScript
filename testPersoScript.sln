@@ -70,6 +70,16 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MifareReadWrite", "pcsc-sharp-master\MifareReadWrite\MifareReadWrite.csproj", "{8EC1245F-841E-42CF-A180-DDA7384829C6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "img", "img", "{3A5F8C10-8B67-4FED-BB4D-FBDC8013478D}"
+	ProjectSection(SolutionItems) = preProject
+		img\BigRoundGreen.png = img\BigRoundGreen.png
+		img\BigRoundRed.png = img\BigRoundRed.png
+		img\button-red.png = img\button-red.png
+		img\green.jpg = img\green.jpg
+		img\SmallRoundGreen.png = img\SmallRoundGreen.png
+		img\SmallRoundRed.png = img\SmallRoundRed.png
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
