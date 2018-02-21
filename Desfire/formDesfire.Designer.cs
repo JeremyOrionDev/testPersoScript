@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(formDesfire));
             this.label1 = new System.Windows.Forms.Label();
             this.cbReadersDesfire = new System.Windows.Forms.ComboBox();
             this.btnDesfireConnect = new System.Windows.Forms.Button();
@@ -44,12 +45,11 @@
             this.label8 = new System.Windows.Forms.Label();
             this.tBxDesfireVersion = new System.Windows.Forms.TextBox();
             this.tBxAnnee = new System.Windows.Forms.TextBox();
-            this.greenBtnConnect = new System.Windows.Forms.PictureBox();
-            this.redBtnConnect = new System.Windows.Forms.PictureBox();
-            this.greenBtnAuth = new System.Windows.Forms.PictureBox();
-            this.redBtnAuth = new System.Windows.Forms.PictureBox();
             this.chek = new System.Windows.Forms.Label();
             this.gBxInfo = new System.Windows.Forms.GroupBox();
+            this.listBoxAppID = new System.Windows.Forms.ListBox();
+            this.label12 = new System.Windows.Forms.Label();
+            this.btnSelectApp = new System.Windows.Forms.Button();
             this.tBxDFName = new System.Windows.Forms.TextBox();
             this.tBxISOID = new System.Windows.Forms.TextBox();
             this.cBxISO = new System.Windows.Forms.CheckBox();
@@ -68,11 +68,13 @@
             this.label6 = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.checkCreate = new System.Windows.Forms.Label();
             this.panel3 = new System.Windows.Forms.Panel();
             this.tBxRetourCreate = new System.Windows.Forms.TextBox();
             this.lblRetourCreate = new System.Windows.Forms.Label();
             this.panelChangeKey = new System.Windows.Forms.Panel();
             this.Valider = new System.Windows.Forms.Button();
+            this.checkCleChange = new System.Windows.Forms.Label();
             this.tBxChangeKeyNewKey = new System.Windows.Forms.TextBox();
             this.tBxChangeKeyOld = new System.Windows.Forms.TextBox();
             this.lblNouvelleCle = new System.Windows.Forms.Label();
@@ -81,8 +83,10 @@
             this.flowCreate = new System.Windows.Forms.FlowLayoutPanel();
             this.panel5 = new System.Windows.Forms.Panel();
             this.gBxConnect = new System.Windows.Forms.GroupBox();
+            this.checkConnect = new System.Windows.Forms.Label();
             this.btnFormatPICC = new System.Windows.Forms.Button();
             this.panelApp = new System.Windows.Forms.Panel();
+            this.checkSelect = new System.Windows.Forms.Label();
             this.panelFileCreation = new System.Windows.Forms.Panel();
             this.btnFileCreate = new System.Windows.Forms.Button();
             this.tBxFileCreateNum = new System.Windows.Forms.TextBox();
@@ -96,10 +100,9 @@
             this.btnSelectAppAID = new System.Windows.Forms.Button();
             this.tBxAIDSelect = new System.Windows.Forms.TextBox();
             this.lblAIDSelect = new System.Windows.Forms.Label();
-            ((System.ComponentModel.ISupportInitialize)(this.greenBtnConnect)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.redBtnConnect)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.greenBtnAuth)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.redBtnAuth)).BeginInit();
+            this.label13 = new System.Windows.Forms.Label();
+            this.tBxAIDhex = new System.Windows.Forms.TextBox();
+            this.btnSetKeys = new System.Windows.Forms.Button();
             this.gBxInfo.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
             this.panel6.SuspendLayout();
@@ -214,6 +217,7 @@
             this.button2.TabIndex = 6;
             this.button2.Text = "Auth &Natif";
             this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
             // cBxDesfireKeyNb
             // 
@@ -259,44 +263,6 @@
             this.tBxAnnee.TabIndex = 31;
             this.tBxAnnee.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             // 
-            // greenBtnConnect
-            // 
-            this.greenBtnConnect.ImageLocation = "";
-            this.greenBtnConnect.Location = new System.Drawing.Point(90, 44);
-            this.greenBtnConnect.Name = "greenBtnConnect";
-            this.greenBtnConnect.Size = new System.Drawing.Size(27, 25);
-            this.greenBtnConnect.TabIndex = 32;
-            this.greenBtnConnect.TabStop = false;
-            this.greenBtnConnect.Visible = false;
-            // 
-            // redBtnConnect
-            // 
-            this.redBtnConnect.Location = new System.Drawing.Point(123, 44);
-            this.redBtnConnect.Name = "redBtnConnect";
-            this.redBtnConnect.Size = new System.Drawing.Size(26, 25);
-            this.redBtnConnect.TabIndex = 33;
-            this.redBtnConnect.TabStop = false;
-            this.redBtnConnect.Visible = false;
-            // 
-            // greenBtnAuth
-            // 
-            this.greenBtnAuth.ImageLocation = "";
-            this.greenBtnAuth.Location = new System.Drawing.Point(158, 112);
-            this.greenBtnAuth.Name = "greenBtnAuth";
-            this.greenBtnAuth.Size = new System.Drawing.Size(22, 24);
-            this.greenBtnAuth.TabIndex = 32;
-            this.greenBtnAuth.TabStop = false;
-            this.greenBtnAuth.Visible = false;
-            // 
-            // redBtnAuth
-            // 
-            this.redBtnAuth.Location = new System.Drawing.Point(186, 112);
-            this.redBtnAuth.Name = "redBtnAuth";
-            this.redBtnAuth.Size = new System.Drawing.Size(22, 24);
-            this.redBtnAuth.TabIndex = 33;
-            this.redBtnAuth.TabStop = false;
-            this.redBtnAuth.Visible = false;
-            // 
             // chek
             // 
             this.chek.AutoSize = true;
@@ -307,6 +273,11 @@
             // 
             // gBxInfo
             // 
+            this.gBxInfo.Controls.Add(this.tBxAIDhex);
+            this.gBxInfo.Controls.Add(this.label13);
+            this.gBxInfo.Controls.Add(this.listBoxAppID);
+            this.gBxInfo.Controls.Add(this.label12);
+            this.gBxInfo.Controls.Add(this.btnSelectApp);
             this.gBxInfo.Controls.Add(this.tBxATRDesfire);
             this.gBxInfo.Controls.Add(this.lblUID);
             this.gBxInfo.Controls.Add(this.label3);
@@ -317,10 +288,39 @@
             this.gBxInfo.Controls.Add(this.tBxDesfireVersion);
             this.gBxInfo.Location = new System.Drawing.Point(3, 158);
             this.gBxInfo.Name = "gBxInfo";
-            this.gBxInfo.Size = new System.Drawing.Size(309, 107);
+            this.gBxInfo.Size = new System.Drawing.Size(309, 159);
             this.gBxInfo.TabIndex = 35;
             this.gBxInfo.TabStop = false;
             this.gBxInfo.Text = "Info carte";
+            // 
+            // listBoxAppID
+            // 
+            this.listBoxAppID.FormattingEnabled = true;
+            this.listBoxAppID.Location = new System.Drawing.Point(93, 110);
+            this.listBoxAppID.Name = "listBoxAppID";
+            this.listBoxAppID.Size = new System.Drawing.Size(75, 43);
+            this.listBoxAppID.TabIndex = 33;
+            this.listBoxAppID.SelectedIndexChanged += new System.EventHandler(this.listBoxAppID_SelectedIndexChanged);
+            // 
+            // label12
+            // 
+            this.label12.AutoSize = true;
+            this.label12.Location = new System.Drawing.Point(14, 107);
+            this.label12.Name = "label12";
+            this.label12.Size = new System.Drawing.Size(40, 13);
+            this.label12.TabIndex = 32;
+            this.label12.Text = "App ID";
+            // 
+            // btnSelectApp
+            // 
+            this.btnSelectApp.Location = new System.Drawing.Point(193, 130);
+            this.btnSelectApp.Name = "btnSelectApp";
+            this.btnSelectApp.Size = new System.Drawing.Size(75, 23);
+            this.btnSelectApp.TabIndex = 2;
+            this.btnSelectApp.Text = "S&elect";
+            this.btnSelectApp.UseVisualStyleBackColor = true;
+            this.btnSelectApp.Visible = false;
+            this.btnSelectApp.Click += new System.EventHandler(this.btnSelectApp_Click);
             // 
             // tBxDFName
             // 
@@ -424,7 +424,7 @@
             this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
             this.flowLayoutPanel1.Location = new System.Drawing.Point(12, 12);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(675, 489);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(647, 489);
             this.flowLayoutPanel1.TabIndex = 37;
             // 
             // panel6
@@ -434,7 +434,7 @@
             this.panel6.Controls.Add(this.flowCreate);
             this.panel6.Location = new System.Drawing.Point(327, 3);
             this.panel6.Name = "panel6";
-            this.panel6.Size = new System.Drawing.Size(345, 483);
+            this.panel6.Size = new System.Drawing.Size(317, 483);
             this.panel6.TabIndex = 39;
             // 
             // panelAppCreate
@@ -490,6 +490,7 @@
             // panel2
             // 
             this.panel2.Controls.Add(this.tBxKS1);
+            this.panel2.Controls.Add(this.checkCreate);
             this.panel2.Controls.Add(this.lblKS1);
             this.panel2.Controls.Add(this.lblKS2);
             this.panel2.Controls.Add(this.tBxKS2);
@@ -497,6 +498,17 @@
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(306, 28);
             this.panel2.TabIndex = 1;
+            // 
+            // checkCreate
+            // 
+            this.checkCreate.AutoSize = true;
+            this.checkCreate.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.checkCreate.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.checkCreate.Location = new System.Drawing.Point(269, 1);
+            this.checkCreate.Name = "checkCreate";
+            this.checkCreate.Size = new System.Drawing.Size(31, 22);
+            this.checkCreate.TabIndex = 36;
+            this.checkCreate.Text = "     ";
             // 
             // panel3
             // 
@@ -532,6 +544,7 @@
             this.panelChangeKey.AutoSize = true;
             this.panelChangeKey.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.panelChangeKey.Controls.Add(this.Valider);
+            this.panelChangeKey.Controls.Add(this.checkCleChange);
             this.panelChangeKey.Controls.Add(this.tBxChangeKeyNewKey);
             this.panelChangeKey.Controls.Add(this.tBxChangeKeyOld);
             this.panelChangeKey.Controls.Add(this.lblNouvelleCle);
@@ -550,6 +563,18 @@
             this.Valider.TabIndex = 4;
             this.Valider.Text = "button1";
             this.Valider.UseVisualStyleBackColor = true;
+            this.Valider.Click += new System.EventHandler(this.Valider_Click);
+            // 
+            // checkCleChange
+            // 
+            this.checkCleChange.AutoSize = true;
+            this.checkCleChange.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.checkCleChange.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.checkCleChange.Location = new System.Drawing.Point(193, 80);
+            this.checkCleChange.Name = "checkCleChange";
+            this.checkCleChange.Size = new System.Drawing.Size(31, 22);
+            this.checkCleChange.TabIndex = 36;
+            this.checkCleChange.Text = "     ";
             // 
             // tBxChangeKeyNewKey
             // 
@@ -608,24 +633,22 @@
             this.panel5.Controls.Add(this.panelApp);
             this.panel5.Location = new System.Drawing.Point(3, 3);
             this.panel5.Name = "panel5";
-            this.panel5.Size = new System.Drawing.Size(318, 414);
+            this.panel5.Size = new System.Drawing.Size(318, 466);
             this.panel5.TabIndex = 38;
             // 
             // gBxConnect
             // 
+            this.gBxConnect.Controls.Add(this.btnSetKeys);
+            this.gBxConnect.Controls.Add(this.checkConnect);
             this.gBxConnect.Controls.Add(this.btnFormatPICC);
             this.gBxConnect.Controls.Add(this.tBxDesfireCle);
             this.gBxConnect.Controls.Add(this.cbReadersDesfire);
             this.gBxConnect.Controls.Add(this.label1);
             this.gBxConnect.Controls.Add(this.chek);
             this.gBxConnect.Controls.Add(this.btnDesfireConnect);
-            this.gBxConnect.Controls.Add(this.redBtnAuth);
             this.gBxConnect.Controls.Add(this.btnDesfireAuthAES);
-            this.gBxConnect.Controls.Add(this.redBtnConnect);
             this.gBxConnect.Controls.Add(this.label4);
-            this.gBxConnect.Controls.Add(this.greenBtnAuth);
             this.gBxConnect.Controls.Add(this.button2);
-            this.gBxConnect.Controls.Add(this.greenBtnConnect);
             this.gBxConnect.Controls.Add(this.cBxDesfireKeyNb);
             this.gBxConnect.Location = new System.Drawing.Point(6, 6);
             this.gBxConnect.Name = "gBxConnect";
@@ -633,13 +656,25 @@
             this.gBxConnect.TabIndex = 0;
             this.gBxConnect.TabStop = false;
             // 
+            // checkConnect
+            // 
+            this.checkConnect.AutoSize = true;
+            this.checkConnect.BackColor = System.Drawing.SystemColors.Control;
+            this.checkConnect.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.checkConnect.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.checkConnect.Location = new System.Drawing.Point(90, 48);
+            this.checkConnect.Name = "checkConnect";
+            this.checkConnect.Size = new System.Drawing.Size(31, 22);
+            this.checkConnect.TabIndex = 36;
+            this.checkConnect.Text = "     ";
+            // 
             // btnFormatPICC
             // 
             this.btnFormatPICC.Location = new System.Drawing.Point(3, 113);
             this.btnFormatPICC.Name = "btnFormatPICC";
             this.btnFormatPICC.Size = new System.Drawing.Size(75, 23);
             this.btnFormatPICC.TabIndex = 35;
-            this.btnFormatPICC.Text = "FormatPICC";
+            this.btnFormatPICC.Text = "&FormatPICC";
             this.btnFormatPICC.UseVisualStyleBackColor = true;
             this.btnFormatPICC.Visible = false;
             this.btnFormatPICC.Click += new System.EventHandler(this.btnFormatPICC_Click);
@@ -647,14 +682,26 @@
             // panelApp
             // 
             this.panelApp.AutoSize = true;
+            this.panelApp.Controls.Add(this.checkSelect);
             this.panelApp.Controls.Add(this.panelFileCreation);
             this.panelApp.Controls.Add(this.btnSelectAppAID);
             this.panelApp.Controls.Add(this.tBxAIDSelect);
             this.panelApp.Controls.Add(this.lblAIDSelect);
-            this.panelApp.Location = new System.Drawing.Point(3, 271);
+            this.panelApp.Location = new System.Drawing.Point(3, 323);
             this.panelApp.Name = "panelApp";
-            this.panelApp.Size = new System.Drawing.Size(260, 140);
+            this.panelApp.Size = new System.Drawing.Size(312, 140);
             this.panelApp.TabIndex = 38;
+            // 
+            // checkSelect
+            // 
+            this.checkSelect.AutoSize = true;
+            this.checkSelect.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.checkSelect.Font = new System.Drawing.Font("Microsoft Sans Serif", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.checkSelect.Location = new System.Drawing.Point(228, 17);
+            this.checkSelect.Name = "checkSelect";
+            this.checkSelect.Size = new System.Drawing.Size(31, 22);
+            this.checkSelect.TabIndex = 36;
+            this.checkSelect.Text = "     ";
             // 
             // panelFileCreation
             // 
@@ -679,7 +726,7 @@
             this.btnFileCreate.Name = "btnFileCreate";
             this.btnFileCreate.Size = new System.Drawing.Size(75, 23);
             this.btnFileCreate.TabIndex = 5;
-            this.btnFileCreate.Text = "Créer";
+            this.btnFileCreate.Text = "C&réer";
             this.btnFileCreate.UseVisualStyleBackColor = true;
             this.btnFileCreate.Click += new System.EventHandler(this.btnFileCreate_Click);
             // 
@@ -777,20 +824,45 @@
             this.lblAIDSelect.TabIndex = 0;
             this.lblAIDSelect.Text = "AID";
             // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(174, 111);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(27, 13);
+            this.label13.TabIndex = 34;
+            this.label13.Text = "hex:";
+            // 
+            // tBxAIDhex
+            // 
+            this.tBxAIDhex.Enabled = false;
+            this.tBxAIDhex.Location = new System.Drawing.Point(207, 108);
+            this.tBxAIDhex.Name = "tBxAIDhex";
+            this.tBxAIDhex.ReadOnly = true;
+            this.tBxAIDhex.Size = new System.Drawing.Size(82, 20);
+            this.tBxAIDhex.TabIndex = 35;
+            // 
+            // btnSetKeys
+            // 
+            this.btnSetKeys.Location = new System.Drawing.Point(190, 48);
+            this.btnSetKeys.Name = "btnSetKeys";
+            this.btnSetKeys.Size = new System.Drawing.Size(63, 23);
+            this.btnSetKeys.TabIndex = 37;
+            this.btnSetKeys.Text = "Key";
+            this.btnSetKeys.UseVisualStyleBackColor = true;
+            this.btnSetKeys.Click += new System.EventHandler(this.btnSetKeys_Click);
+            // 
             // formDesfire
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(758, 858);
+            this.ClientSize = new System.Drawing.Size(660, 507);
             this.Controls.Add(this.flowLayoutPanel1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "formDesfire";
-            this.Text = "Form1";
-            ((System.ComponentModel.ISupportInitialize)(this.greenBtnConnect)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.redBtnConnect)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.greenBtnAuth)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.redBtnAuth)).EndInit();
+            this.Text = "Desfire";
             this.gBxInfo.ResumeLayout(false);
             this.gBxInfo.PerformLayout();
             this.flowLayoutPanel1.ResumeLayout(false);
@@ -839,10 +911,6 @@
         private System.Windows.Forms.Label label8;
         private System.Windows.Forms.TextBox tBxDesfireVersion;
         private System.Windows.Forms.TextBox tBxAnnee;
-        private System.Windows.Forms.PictureBox greenBtnConnect;
-        private System.Windows.Forms.PictureBox redBtnConnect;
-        private System.Windows.Forms.PictureBox greenBtnAuth;
-        private System.Windows.Forms.PictureBox redBtnAuth;
         private System.Windows.Forms.Label chek;
         private System.Windows.Forms.GroupBox gBxInfo;
         private System.Windows.Forms.TextBox tBxDFName;
@@ -891,6 +959,16 @@
         private System.Windows.Forms.ComboBox cBxKeyChange;
         private System.Windows.Forms.Label lblIndexKeyChange;
         private System.Windows.Forms.Panel panel5;
+        private System.Windows.Forms.Label checkCreate;
+        private System.Windows.Forms.Label checkCleChange;
+        private System.Windows.Forms.Label checkConnect;
+        private System.Windows.Forms.Label checkSelect;
+        private System.Windows.Forms.ListBox listBoxAppID;
+        private System.Windows.Forms.Label label12;
+        private System.Windows.Forms.Button btnSelectApp;
+        private System.Windows.Forms.TextBox tBxAIDhex;
+        private System.Windows.Forms.Label label13;
+        private System.Windows.Forms.Button btnSetKeys;
     }
 }
 
