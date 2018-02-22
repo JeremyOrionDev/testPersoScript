@@ -47,6 +47,8 @@
             this.tBxAnnee = new System.Windows.Forms.TextBox();
             this.chek = new System.Windows.Forms.Label();
             this.gBxInfo = new System.Windows.Forms.GroupBox();
+            this.tBxAIDhex = new System.Windows.Forms.TextBox();
+            this.label13 = new System.Windows.Forms.Label();
             this.listBoxAppID = new System.Windows.Forms.ListBox();
             this.label12 = new System.Windows.Forms.Label();
             this.btnSelectApp = new System.Windows.Forms.Button();
@@ -83,6 +85,7 @@
             this.flowCreate = new System.Windows.Forms.FlowLayoutPanel();
             this.panel5 = new System.Windows.Forms.Panel();
             this.gBxConnect = new System.Windows.Forms.GroupBox();
+            this.btnSetKeys = new System.Windows.Forms.Button();
             this.checkConnect = new System.Windows.Forms.Label();
             this.btnFormatPICC = new System.Windows.Forms.Button();
             this.panelApp = new System.Windows.Forms.Panel();
@@ -100,9 +103,6 @@
             this.btnSelectAppAID = new System.Windows.Forms.Button();
             this.tBxAIDSelect = new System.Windows.Forms.TextBox();
             this.lblAIDSelect = new System.Windows.Forms.Label();
-            this.label13 = new System.Windows.Forms.Label();
-            this.tBxAIDhex = new System.Windows.Forms.TextBox();
-            this.btnSetKeys = new System.Windows.Forms.Button();
             this.gBxInfo.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
             this.panel6.SuspendLayout();
@@ -275,9 +275,6 @@
             // 
             this.gBxInfo.Controls.Add(this.tBxAIDhex);
             this.gBxInfo.Controls.Add(this.label13);
-            this.gBxInfo.Controls.Add(this.listBoxAppID);
-            this.gBxInfo.Controls.Add(this.label12);
-            this.gBxInfo.Controls.Add(this.btnSelectApp);
             this.gBxInfo.Controls.Add(this.tBxATRDesfire);
             this.gBxInfo.Controls.Add(this.lblUID);
             this.gBxInfo.Controls.Add(this.label3);
@@ -288,24 +285,42 @@
             this.gBxInfo.Controls.Add(this.tBxDesfireVersion);
             this.gBxInfo.Location = new System.Drawing.Point(3, 158);
             this.gBxInfo.Name = "gBxInfo";
-            this.gBxInfo.Size = new System.Drawing.Size(309, 159);
+            this.gBxInfo.Size = new System.Drawing.Size(309, 138);
             this.gBxInfo.TabIndex = 35;
             this.gBxInfo.TabStop = false;
             this.gBxInfo.Text = "Info carte";
             // 
+            // tBxAIDhex
+            // 
+            this.tBxAIDhex.Enabled = false;
+            this.tBxAIDhex.Location = new System.Drawing.Point(207, 108);
+            this.tBxAIDhex.Name = "tBxAIDhex";
+            this.tBxAIDhex.ReadOnly = true;
+            this.tBxAIDhex.Size = new System.Drawing.Size(82, 20);
+            this.tBxAIDhex.TabIndex = 35;
+            // 
+            // label13
+            // 
+            this.label13.AutoSize = true;
+            this.label13.Location = new System.Drawing.Point(174, 111);
+            this.label13.Name = "label13";
+            this.label13.Size = new System.Drawing.Size(27, 13);
+            this.label13.TabIndex = 34;
+            this.label13.Text = "hex:";
+            // 
             // listBoxAppID
             // 
             this.listBoxAppID.FormattingEnabled = true;
-            this.listBoxAppID.Location = new System.Drawing.Point(93, 110);
+            this.listBoxAppID.Location = new System.Drawing.Point(174, 6);
             this.listBoxAppID.Name = "listBoxAppID";
-            this.listBoxAppID.Size = new System.Drawing.Size(75, 43);
+            this.listBoxAppID.Size = new System.Drawing.Size(112, 95);
             this.listBoxAppID.TabIndex = 33;
             this.listBoxAppID.SelectedIndexChanged += new System.EventHandler(this.listBoxAppID_SelectedIndexChanged);
             // 
             // label12
             // 
             this.label12.AutoSize = true;
-            this.label12.Location = new System.Drawing.Point(14, 107);
+            this.label12.Location = new System.Drawing.Point(128, 6);
             this.label12.Name = "label12";
             this.label12.Size = new System.Drawing.Size(40, 13);
             this.label12.TabIndex = 32;
@@ -313,7 +328,7 @@
             // 
             // btnSelectApp
             // 
-            this.btnSelectApp.Location = new System.Drawing.Point(193, 130);
+            this.btnSelectApp.Location = new System.Drawing.Point(174, 107);
             this.btnSelectApp.Name = "btnSelectApp";
             this.btnSelectApp.Size = new System.Drawing.Size(75, 23);
             this.btnSelectApp.TabIndex = 2;
@@ -429,8 +444,8 @@
             // 
             // panel6
             // 
-            this.panel6.Controls.Add(this.panelAppCreate);
             this.panel6.Controls.Add(this.panelChangeKey);
+            this.panel6.Controls.Add(this.panelApp);
             this.panel6.Controls.Add(this.flowCreate);
             this.panel6.Location = new System.Drawing.Point(327, 3);
             this.panel6.Name = "panel6";
@@ -443,7 +458,7 @@
             this.panelAppCreate.Controls.Add(this.panelISO);
             this.panelAppCreate.Controls.Add(this.panel2);
             this.panelAppCreate.Controls.Add(this.panel3);
-            this.panelAppCreate.Location = new System.Drawing.Point(3, 3);
+            this.panelAppCreate.Location = new System.Drawing.Point(3, 44);
             this.panelAppCreate.Name = "panelAppCreate";
             this.panelAppCreate.Size = new System.Drawing.Size(309, 171);
             this.panelAppCreate.TabIndex = 40;
@@ -550,7 +565,7 @@
             this.panelChangeKey.Controls.Add(this.lblNouvelleCle);
             this.panelChangeKey.Controls.Add(this.cBxKeyChange);
             this.panelChangeKey.Controls.Add(this.lblIndexKeyChange);
-            this.panelChangeKey.Location = new System.Drawing.Point(3, 180);
+            this.panelChangeKey.Location = new System.Drawing.Point(3, 227);
             this.panelChangeKey.Name = "panelChangeKey";
             this.panelChangeKey.Size = new System.Drawing.Size(309, 106);
             this.panelChangeKey.TabIndex = 1;
@@ -626,14 +641,13 @@
             // 
             // panel5
             // 
-            this.panel5.AutoSize = true;
             this.panel5.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.panel5.Controls.Add(this.gBxConnect);
+            this.panel5.Controls.Add(this.panelFileCreation);
             this.panel5.Controls.Add(this.gBxInfo);
-            this.panel5.Controls.Add(this.panelApp);
             this.panel5.Location = new System.Drawing.Point(3, 3);
             this.panel5.Name = "panel5";
-            this.panel5.Size = new System.Drawing.Size(318, 466);
+            this.panel5.Size = new System.Drawing.Size(318, 460);
             this.panel5.TabIndex = 38;
             // 
             // gBxConnect
@@ -655,6 +669,16 @@
             this.gBxConnect.Size = new System.Drawing.Size(309, 149);
             this.gBxConnect.TabIndex = 0;
             this.gBxConnect.TabStop = false;
+            // 
+            // btnSetKeys
+            // 
+            this.btnSetKeys.Location = new System.Drawing.Point(190, 48);
+            this.btnSetKeys.Name = "btnSetKeys";
+            this.btnSetKeys.Size = new System.Drawing.Size(63, 23);
+            this.btnSetKeys.TabIndex = 37;
+            this.btnSetKeys.Text = "app";
+            this.btnSetKeys.UseVisualStyleBackColor = true;
+            this.btnSetKeys.Click += new System.EventHandler(this.btnSetKeys_Click);
             // 
             // checkConnect
             // 
@@ -682,14 +706,14 @@
             // panelApp
             // 
             this.panelApp.AutoSize = true;
+            this.panelApp.Controls.Add(this.panelAppCreate);
             this.panelApp.Controls.Add(this.checkSelect);
-            this.panelApp.Controls.Add(this.panelFileCreation);
             this.panelApp.Controls.Add(this.btnSelectAppAID);
             this.panelApp.Controls.Add(this.tBxAIDSelect);
             this.panelApp.Controls.Add(this.lblAIDSelect);
-            this.panelApp.Location = new System.Drawing.Point(3, 323);
+            this.panelApp.Location = new System.Drawing.Point(3, 3);
             this.panelApp.Name = "panelApp";
-            this.panelApp.Size = new System.Drawing.Size(312, 140);
+            this.panelApp.Size = new System.Drawing.Size(315, 218);
             this.panelApp.TabIndex = 38;
             // 
             // checkSelect
@@ -707,22 +731,25 @@
             // 
             this.panelFileCreation.Controls.Add(this.btnFileCreate);
             this.panelFileCreation.Controls.Add(this.tBxFileCreateNum);
+            this.panelFileCreation.Controls.Add(this.btnSelectApp);
+            this.panelFileCreation.Controls.Add(this.listBoxAppID);
             this.panelFileCreation.Controls.Add(this.label11);
+            this.panelFileCreation.Controls.Add(this.label12);
             this.panelFileCreation.Controls.Add(this.tBxFileCreateAR);
             this.panelFileCreation.Controls.Add(this.label9);
             this.panelFileCreation.Controls.Add(this.tBxFileCreateComSet);
             this.panelFileCreation.Controls.Add(this.label10);
             this.panelFileCreation.Controls.Add(this.tBxFileCreateSize);
             this.panelFileCreation.Controls.Add(this.label2);
-            this.panelFileCreation.Location = new System.Drawing.Point(3, 45);
+            this.panelFileCreation.Location = new System.Drawing.Point(6, 302);
             this.panelFileCreation.Name = "panelFileCreation";
-            this.panelFileCreation.Size = new System.Drawing.Size(254, 92);
+            this.panelFileCreation.Size = new System.Drawing.Size(309, 143);
             this.panelFileCreation.TabIndex = 4;
             this.panelFileCreation.Visible = false;
             // 
             // btnFileCreate
             // 
-            this.btnFileCreate.Location = new System.Drawing.Point(169, 61);
+            this.btnFileCreate.Location = new System.Drawing.Point(3, 117);
             this.btnFileCreate.Name = "btnFileCreate";
             this.btnFileCreate.Size = new System.Drawing.Size(75, 23);
             this.btnFileCreate.TabIndex = 5;
@@ -741,7 +768,7 @@
             // label11
             // 
             this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(122, 38);
+            this.label11.Location = new System.Drawing.Point(3, 84);
             this.label11.Name = "label11";
             this.label11.Size = new System.Drawing.Size(46, 13);
             this.label11.TabIndex = 3;
@@ -749,7 +776,7 @@
             // 
             // tBxFileCreateAR
             // 
-            this.tBxFileCreateAR.Location = new System.Drawing.Point(55, 35);
+            this.tBxFileCreateAR.Location = new System.Drawing.Point(55, 29);
             this.tBxFileCreateAR.Name = "tBxFileCreateAR";
             this.tBxFileCreateAR.Size = new System.Drawing.Size(64, 20);
             this.tBxFileCreateAR.TabIndex = 1;
@@ -758,7 +785,7 @@
             // label9
             // 
             this.label9.AutoSize = true;
-            this.label9.Location = new System.Drawing.Point(122, 6);
+            this.label9.Location = new System.Drawing.Point(3, 58);
             this.label9.Name = "label9";
             this.label9.Size = new System.Drawing.Size(44, 13);
             this.label9.TabIndex = 3;
@@ -766,7 +793,7 @@
             // 
             // tBxFileCreateComSet
             // 
-            this.tBxFileCreateComSet.Location = new System.Drawing.Point(180, 3);
+            this.tBxFileCreateComSet.Location = new System.Drawing.Point(55, 55);
             this.tBxFileCreateComSet.Name = "tBxFileCreateComSet";
             this.tBxFileCreateComSet.Size = new System.Drawing.Size(64, 20);
             this.tBxFileCreateComSet.TabIndex = 1;
@@ -782,7 +809,7 @@
             // 
             // tBxFileCreateSize
             // 
-            this.tBxFileCreateSize.Location = new System.Drawing.Point(180, 35);
+            this.tBxFileCreateSize.Location = new System.Drawing.Point(55, 81);
             this.tBxFileCreateSize.Name = "tBxFileCreateSize";
             this.tBxFileCreateSize.Size = new System.Drawing.Size(64, 20);
             this.tBxFileCreateSize.TabIndex = 1;
@@ -824,34 +851,6 @@
             this.lblAIDSelect.TabIndex = 0;
             this.lblAIDSelect.Text = "AID";
             // 
-            // label13
-            // 
-            this.label13.AutoSize = true;
-            this.label13.Location = new System.Drawing.Point(174, 111);
-            this.label13.Name = "label13";
-            this.label13.Size = new System.Drawing.Size(27, 13);
-            this.label13.TabIndex = 34;
-            this.label13.Text = "hex:";
-            // 
-            // tBxAIDhex
-            // 
-            this.tBxAIDhex.Enabled = false;
-            this.tBxAIDhex.Location = new System.Drawing.Point(207, 108);
-            this.tBxAIDhex.Name = "tBxAIDhex";
-            this.tBxAIDhex.ReadOnly = true;
-            this.tBxAIDhex.Size = new System.Drawing.Size(82, 20);
-            this.tBxAIDhex.TabIndex = 35;
-            // 
-            // btnSetKeys
-            // 
-            this.btnSetKeys.Location = new System.Drawing.Point(190, 48);
-            this.btnSetKeys.Name = "btnSetKeys";
-            this.btnSetKeys.Size = new System.Drawing.Size(63, 23);
-            this.btnSetKeys.TabIndex = 37;
-            this.btnSetKeys.Text = "Key";
-            this.btnSetKeys.UseVisualStyleBackColor = true;
-            this.btnSetKeys.Click += new System.EventHandler(this.btnSetKeys_Click);
-            // 
             // formDesfire
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -866,7 +865,6 @@
             this.gBxInfo.ResumeLayout(false);
             this.gBxInfo.PerformLayout();
             this.flowLayoutPanel1.ResumeLayout(false);
-            this.flowLayoutPanel1.PerformLayout();
             this.panel6.ResumeLayout(false);
             this.panel6.PerformLayout();
             this.panelAppCreate.ResumeLayout(false);
@@ -881,7 +879,6 @@
             this.panelChangeKey.ResumeLayout(false);
             this.panelChangeKey.PerformLayout();
             this.panel5.ResumeLayout(false);
-            this.panel5.PerformLayout();
             this.gBxConnect.ResumeLayout(false);
             this.gBxConnect.PerformLayout();
             this.panelApp.ResumeLayout(false);

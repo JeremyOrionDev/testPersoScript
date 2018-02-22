@@ -25,7 +25,9 @@ namespace Desfire
         string[] readersList;
         byte[] key;
         byte[] AMK = new byte[16] { 0x9B, 0x64, 0x29, 0xEF, 0x91, 0x19, 0x19, 0xA4, 0x04, 0xD5, 0x3D, 0x38, 0xE3, 0xBA, 0xE6, 0xB0 };
+
         byte[] read1 = new byte[16] { 0xA2, 0xAB, 0xFD, 0xB3, 0x43, 0xE6, 0x19, 0xB0, 0x0B, 0xF2, 0x67, 0x9B, 0xDF, 0xD6, 0xE5, 0x57 };
+
         byte[] write1 = new byte[16] { 0x8C, 0x89, 0x8C, 0x29, 0x19, 0x7C, 0x6D, 0x9E, 0xF2, 0x4C, 0xE5, 0x49, 0x0D, 0xD5, 0xD5, 0x97 };
         byte[] read2 = new byte[16] { 0xF8, 0x4F, 0xA4, 0xB9, 0xEF, 0x62, 0xA8, 0xFE, 0xBF, 0x9D, 0x7F, 0xF2, 0x54, 0x6E, 0x83, 0x85 };
         byte[] write2 = new byte[16] { 0xE9, 0x2C, 0x0D, 0x02, 0xCE, 0x64, 0xA7, 0x0D, 0xB9, 0x57, 0xEA, 0xD0, 0x80, 0xD9, 0x8C, 0xFD };
@@ -65,7 +67,7 @@ namespace Desfire
             
             gBxInfo.Visible = false;
             panelISO.Visible= false;
-          
+            
             lResult = SCARD.EstablishContext(SCARD.SCOPE_SYSTEM, IntPtr.Zero, IntPtr.Zero, ref hContext);
             if (lResult != SCARD.S_SUCCESS)
             {
@@ -162,6 +164,7 @@ namespace Desfire
 
         private void btnCreateApllication_Click(object sender, EventArgs e)
         {
+           
             checkCreate.Text = "";
             if (!cBxISO.Checked)
             {
@@ -180,7 +183,7 @@ namespace Desfire
 
                 if (rc != SCARD.S_SUCCESS)
                 {
-                    MessageBox.Show("Erreur authentification" + "\n" + rc.ToString("X2"));
+                    MessageBox.Show("Erreur authentification l. 186");
                     return;
                 }
 
@@ -189,10 +192,14 @@ namespace Desfire
                 ////AID = Convert.ToUInt32(tBxAIDCreate.Text, 32);
                 //KS1 = Convert.ToByte(tBxKS1.Text, 16);
                 //KS2 = Convert.ToByte(tBxKS2.Text, 16);
-                uint aID = 4539717;
-                byte ks11 = 0xEB;
+                uint aID = 0x55_55_55;
+                byte ks11 = 0x0B;
                 byte ks22 = 0x85;
+                byte b0 = 00,b1=01;
                 // envoi de la commande de creation application
+
+                
+
                 rc = SCARD_DESFIRE.CreateApplication(channel.hCard, aID,ks11,ks22);
 
 
@@ -200,7 +207,7 @@ namespace Desfire
                 {
                     checkCreate.ForeColor = Color.Red;
                     checkCreate.Text = "X";
-                    MessageBox.Show("Erreur création application " + AID + "\n" + "l. 203");
+                    MessageBox.Show("Erreur création application " + aID + "\n" + "l. 207");
                     return;
                 }
                 else
@@ -213,116 +220,146 @@ namespace Desfire
 
                 if (rc != SCARD.S_SUCCESS)
                 {                    
-                    MessageBox.Show("Erreur select application " + aID );
+                    MessageBox.Show("Erreur select application " + aID +"l. 220");
                     return;
                 }
 
-                rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, 0x00, Master);
+                rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, b0, Master);
 
                 if (rc != SCARD.S_SUCCESS)
                 {
-                    MessageBox.Show("Erreur auth");
+                    MessageBox.Show("Erreur auth l. 228");
+                    return;
+                }
+                rc = SCARD_DESFIRE.ChangeKeySettings(channel.hCard, 0xE9);
+                if (rc != SCARD.S_SUCCESS)
+                {
+                    MessageBox.Show("Erreur change key settings l. 234");
+                    return;
+                }
+                rc = SCARD_DESFIRE.SelectApplication(channel.hCard, aID);
+
+                if (rc != SCARD.S_SUCCESS)
+                {
+                    MessageBox.Show("Erreur select application l. 241" + aID);
+                    return;
+                }
+
+                rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, b0, Master);
+
+                if (rc != SCARD.S_SUCCESS)
+                {
+                    MessageBox.Show("Erreur auth l.249");
                     return;
                 }
                 uint size = 000050;
                 ushort AR1 = 4608;//0x1200
-                rc = SCARD_DESFIRE.CreateStdDataFile(channel.hCard, 0x00, 0x00, AR1, size);
+                rc = SCARD_DESFIRE.CreateStdDataFile(channel.hCard, b0, b0, AR1, size);
                 if (rc != SCARD.S_SUCCESS)
                 {
-                    MessageBox.Show("Erreur create file 00");
+                    MessageBox.Show("Erreur create file 00 l.257");
                     return;
                 }
-                else MessageBox.Show("File 00 created");
+                
 
                 ushort AR2 = 13312; //0x3400
-                rc = SCARD_DESFIRE.CreateStdDataFile(channel.hCard, 0x01, 0x00, AR2, size);
+                rc = SCARD_DESFIRE.CreateStdDataFile(channel.hCard, b1, b0, AR2, size);
                 if (rc != SCARD.S_SUCCESS)
                 {
-                    MessageBox.Show("Erreur create file 00");
+                    MessageBox.Show("Erreur create file 00 l.266");
                     return;
                 }
-                else MessageBox.Show("File 01 created");
+                
 
-
-                rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, 00, keyNul);
+                rc = SCARD_DESFIRE.SelectApplication(channel.hCard, aID);
 
                 if (rc != SCARD.S_SUCCESS)
                 {
-                    MessageBox.Show("Erreur authentification" + "\n" + "l. 251");
+                    MessageBox.Show("Erreur select application " + aID+" l.275");
                     return;
                 }
-                //todo reprendre auth
-                rc = SCARD_DESFIRE.ChangeKeyAes(channel.hCard, 0x00, 0x03, AMK, keyNul);
+
+
+                rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, b0, Master);
+
                 if (rc != SCARD.S_SUCCESS)
                 {
-                    MessageBox.Show("Erreur change key 00 ");
+                    MessageBox.Show("Erreur authentification" + "\n" + "l. 284");
+                    return;
+                }
+                rc = SCARD_DESFIRE.ChangeKeyAes(channel.hCard, b0,b1,  read1, null);
+                if (rc != SCARD.S_SUCCESS)
+                {
+                    MessageBox.Show("Erreur change key 00 l.290");
                     return;
                 }
                 else MessageBox.Show("Key 00 updated");
 
-                //rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, 00, keyNul);
 
-                //if (rc != SCARD.S_SUCCESS)
-                //{
-                //    MessageBox.Show("Erreur authentification" + "\n" + rc.ToString("X2"));
-                //    return;
-                //}
+                rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, 0x01, Master);
 
-                //rc = SCARD_DESFIRE.ChangeKeyAes(channel.hCard, 0x01, 0x03, read1, keyNul);
-                //if (rc != SCARD.S_SUCCESS)
-                //{
-                //    MessageBox.Show("Erreur change key 01 ");
-                //    return;
-                //}
-                //else MessageBox.Show("Key 01 updated");
+                if (rc != SCARD.S_SUCCESS)
+                {
+                    MessageBox.Show("Erreur authentification" + "\n" + "l. 284");
+                    return;
+                }
 
-                //rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, 00, keyNul);
+                rc = SCARD_DESFIRE.ChangeKeyAes(channel.hCard, 0x01, 0x03, read1, null);
+                if (rc != SCARD.S_SUCCESS)
+                {
+                    MessageBox.Show("Erreur change key 01 l306");
+                    return;
+                }
+                else MessageBox.Show("Key 01 updated");
 
-                //if (rc != SCARD.S_SUCCESS)
-                //{
-                //    MessageBox.Show("Erreur authentification" + "\n" + rc.ToString("X2"));
-                //    return;
-                //}
 
-                //rc = SCARD_DESFIRE.ChangeKeyAes(channel.hCard, 0x02, 0x03, write1, keyNul);
-                //if (rc != SCARD.S_SUCCESS)
-                //{
-                //    MessageBox.Show("Erreur change key 02 ");
-                //    return;
-                //}
-                //else MessageBox.Show("Key 02 updated");
+                rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, 0x02, Master);
 
-                //rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, 00, keyNul);
+                if (rc != SCARD.S_SUCCESS)
+                {
+                    MessageBox.Show("Erreur authentification" + "\n" + "l. 284");
+                    return;
+                }
 
-                //if (rc != SCARD.S_SUCCESS)
-                //{
-                //    MessageBox.Show("Erreur authentification" + "\n" + rc.ToString("X2"));
-                //    return;
-                //}
+                rc = SCARD_DESFIRE.ChangeKeyAes(channel.hCard, 0x02, 0x03, write1, null);
+                if (rc != SCARD.S_SUCCESS)
+                {
+                    MessageBox.Show("Erreur change key 02 l.322");
+                    return;
+                }
+                else MessageBox.Show("Key 02 updated");
 
-                //rc = SCARD_DESFIRE.ChangeKeyAes(channel.hCard, 0x03, 0x03, read2, keyNul);
-                //if (rc != SCARD.S_SUCCESS)
-                //{
-                //    MessageBox.Show("Erreur change key 03 ");
-                //    return;
-                //}
-                //else MessageBox.Show("Key 03 updated");
+                rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, 0x03, Master);
 
-                //rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, 00, keyNul);
+                if (rc != SCARD.S_SUCCESS)
+                {
+                    MessageBox.Show("Erreur authentification l.331" );
+                    return;
+                }
 
-                //if (rc != SCARD.S_SUCCESS)
-                //{
-                //    MessageBox.Show("Erreur authentification" + "\n" + rc.ToString("X2"));
-                //    return;
-                //}
+                rc = SCARD_DESFIRE.ChangeKeyAes(channel.hCard, 0x03, 0x03, read2, null);
+                if (rc != SCARD.S_SUCCESS)
+                {
+                    MessageBox.Show("Erreur change key 03 l.338");
+                    return;
+                }
+                else MessageBox.Show("Key 03 updated");
 
-                //rc = SCARD_DESFIRE.ChangeKeyAes(channel.hCard, 0x04, 0x03, write1, keyNul);
-                //if (rc != SCARD.S_SUCCESS)
-                //{
-                //    MessageBox.Show("Erreur change key 04");
-                //    return;
-                //}
-                //else MessageBox.Show("Key 04 updated");
+                rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, 0x04, Master);
+
+                if (rc != SCARD.S_SUCCESS)
+                {
+                    MessageBox.Show("Erreur authentification l.347");
+                    return;
+                }
+
+                rc = SCARD_DESFIRE.ChangeKeyAes(channel.hCard, 0x04, 0x03, write1, null);
+                if (rc != SCARD.S_SUCCESS)
+                {
+                    MessageBox.Show("Erreur change key 04 l.354");
+                    return;
+                }
+                else MessageBox.Show("Key 04 updated");
             }
             else
             {
@@ -676,15 +713,15 @@ namespace Desfire
                 MessageBox.Show("Erreur auth master");
                 return;
             }
-            else MessageBox.Show("auth master " + "\u2714");
+            
             //Create app 495352
-            rc = SCARD_DESFIRE.CreateApplication(channel.hCard, appID, 0xD0, 0x86);
+            rc = SCARD_DESFIRE.CreateApplication(channel.hCard, appID, 0x0B, 0x85);
             if (rc!=SCARD.S_SUCCESS)
             {
                 MessageBox.Show("Erreur application "+appID+" non créée");
                 return;
             }
-            else MessageBox.Show("Application "+appID+" créée");
+            
 
             //Select app 495352
             rc = SCARD_DESFIRE.SelectApplication(channel.hCard, appID);
@@ -693,7 +730,7 @@ namespace Desfire
                 MessageBox.Show("Erreur select application 495352 ");
                 return;
             }
-            else MessageBox.Show("Application sélectionnée");
+            
 
             //Auth Master key
             rc = SCARD_DESFIRE.AuthenticateAes(channel.hCard, 0x00,Master);
@@ -702,7 +739,7 @@ namespace Desfire
                 MessageBox.Show("Erreur auth master");
                 return;
             }
-            else MessageBox.Show("auth master "+"\u2714");
+            
 
             //Set keys
             rc = SCARD_DESFIRE.ChangeKeySettings(channel.hCard, 0x09);
@@ -800,7 +837,8 @@ namespace Desfire
 
                     listBoxAppID.Items.Add(aidList[i]);
                 }
-            }        
+            }
+            panelFileCreation.Visible = true;
         }
 
         private void btnDesfireAuthAES_Click(object sender, EventArgs e)
